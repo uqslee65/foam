@@ -220,7 +220,7 @@ export function createPrivacyPolicy(config: PrivacyConfig): PrivacyPolicy {
       return makeDecision(input, 'encoded_path');
     }
     if (
-      input.includes('\\') ||
+      (path.sep !== '\\' && input.includes('\\')) ||
       /[․․‥…．．／∕⁄]/u.test(input)
     ) {
       return makeDecision(input, 'lookalike_path');

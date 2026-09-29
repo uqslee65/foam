@@ -66,13 +66,26 @@ export function readCalendar(filePath: string): CalendarFile {
     ) {
       return { status: 'missing', reason: 'invalid calendar file: missing events array' };
     }
+    const events = (parsed as { events: unknown[] }).events;
+    if (
+      !events.every(
+        event =>
+          typeof event === 'object' &&
+          event !== null &&
+          typeof (event as { id?: unknown }).id === 'string' &&
+          typeof (event as { date?: unknown }).date === 'string' &&
+          typeof (event as { title?: unknown }).title === 'string'
+      )
+    ) {
+      return { status: 'missing', reason: 'invalid calendar file: malformed event' };
+    }
     const timezone =
       typeof (parsed as { timezone?: unknown }).timezone === 'string'
         ? ((parsed as { timezone: string }).timezone)
         : 'UTC';
     return {
       status: 'ok',
-      events: (parsed as { events: CalendarEvent[] }).events,
+      events: events as CalendarEvent[],
       timezone,
     };
   } catch (err) {
