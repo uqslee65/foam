@@ -263,12 +263,9 @@ export function createPrivacyPolicy(config: PrivacyConfig): PrivacyPolicy {
     }
 
     const candidateIdentity = fileIdentity(canonicalPath);
-    const refreshedMandatoryReferences = mandatoryReferencePaths.map(
-      fileIdentity
-    );
     if (
       candidateIdentity !== null &&
-      [...cachedMandatoryReferences, ...refreshedMandatoryReferences].some(
+      cachedMandatoryReferences.some(
         reference =>
           reference !== null &&
           reference.dev === candidateIdentity.dev &&
