@@ -1,3 +1,6 @@
+import { randomUUID } from 'node:crypto';
+import * as path from 'node:path';
+
 export interface InboxNote {
   readonly title: string;
   readonly body: string;
@@ -73,7 +76,8 @@ export function generateFilename(title: string, timestamp: string): string {
     return '';
   }
   const slug = toSlug(title);
-  return `${parsed.datePart}-${parsed.timePart}-${slug}-${Math.random().toString(36).slice(2, 6)}.md`;
+  const randomSuffix = randomUUID().replace(/-/g, '').slice(0, 8);
+  return `${parsed.datePart}-${parsed.timePart}-${slug}-${randomSuffix}.md`;
 }
 
 export function validateCapture(title: string, inboxDir: string): CaptureError | null {
@@ -83,7 +87,9 @@ export function validateCapture(title: string, inboxDir: string): CaptureError |
   if (title.length > 200) {
     return 'title_too_long';
   }
-  if (inboxDir.includes('..') || inboxDir.startsWith('/') || inboxDir.startsWith('~')) {
+  const workspaceBase = path.resolve(process.cwd());
+  const destination = path.resolve(workspaceBase, inboxDir);
+  if (destination !== workspaceBase && !destination.startsWith(`${workspaceBase}${path.sep}`)) {
     return 'path_traversal';
   }
   return null;
@@ -121,7 +127,45 @@ provenance: ${provenance}
   return `${frontmatter}\n\n${trimmedBody}\n`;
 }
 
-const FRONTMATTER_REGEX = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/;
+const FRONTMATTER_MAX_LENGTH = 1000;
+
+function splitFrontmatter(content: string): { frontmatter: string; body: string } | null {
+  const openingLength = content.startsWith('---\r\n')
+    ? 5
+    : content.startsWith('---\n')
+      ? 4
+      : -1;
+  if (openingLength === -1) {
+    return null;
+  }
+
+  const frontmatterLines: string[] = [];
+  let lineStart = openingLength;
+  while (lineStart - openingLength <= FRONTMATTER_MAX_LENGTH) {
+    const newlineIndex = content.indexOf('\n', lineStart);
+    const lineEnd = newlineIndex === -1 ? content.length : newlineIndex;
+    if (lineEnd - openingLength > FRONTMATTER_MAX_LENGTH) {
+      return null;
+    }
+
+    const line = content.slice(lineStart, lineEnd).replace(/\r$/, '');
+    if (line === '---') {
+      const bodyStart = newlineIndex === -1 ? content.length : newlineIndex + 1;
+      return {
+        frontmatter: frontmatterLines.join('\n'),
+        body: content.slice(bodyStart),
+      };
+    }
+
+    frontmatterLines.push(line);
+    if (newlineIndex === -1) {
+      return null;
+    }
+    lineStart = newlineIndex + 1;
+  }
+
+  return null;
+}
 
 function unquoteYaml(val: string): string {
   val = val.trim();
@@ -139,12 +183,12 @@ function unquoteYaml(val: string): string {
 }
 
 export function parseNote(content: string): InboxNote | null {
-  const match = FRONTMATTER_REGEX.exec(content);
-  if (!match) {
+  const parts = splitFrontmatter(content);
+  if (!parts) {
     return null;
   }
 
-  const fmLines = match[1].split('\n');
+  const fmLines = parts.frontmatter.split('\n');
   const meta: Record<string, string> = {};
   for (const line of fmLines) {
     const separator = line.indexOf(':');
@@ -167,7 +211,7 @@ export function parseNote(content: string): InboxNote | null {
       : rawProvenance;
 
   const createdAt = meta.created ?? '';
-  const body = match[2].trim();
+  const body = parts.body.trim();
 
   return {
     title: meta.title,
