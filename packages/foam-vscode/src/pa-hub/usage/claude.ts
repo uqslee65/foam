@@ -260,6 +260,7 @@ export function watchClaudeUsage(
   let staleTimer: Timer | null = null;
   let pollTimer: ReturnType<typeof setInterval> | null = null;
   let watcherAttachInFlight = false;
+  let refreshInFlight = false;
 
   let lastKey: string | null = null;
 
@@ -295,24 +296,29 @@ export function watchClaudeUsage(
   }
 
   async function refresh(): Promise<void> {
-    if (disposed) {
+    if (disposed || refreshInFlight) {
       return;
     }
 
-    const state = await readClaudeUsage(stateDir, {
-      now: now(),
-      staleAfterMs,
-      fs: fileSystem,
-    });
-    if (disposed) {
-      return;
+    refreshInFlight = true;
+    try {
+      const state = await readClaudeUsage(stateDir, {
+        now: now(),
+        staleAfterMs,
+        fs: fileSystem,
+      });
+      if (disposed) {
+        return;
+      }
+      const nextKey = stateKey(state);
+      if (lastKey === null || nextKey !== lastKey) {
+        lastKey = nextKey;
+        onState(state);
+      }
+      armStaleTimer(state);
+    } finally {
+      refreshInFlight = false;
     }
-    const nextKey = stateKey(state);
-    if (lastKey === null || nextKey !== lastKey) {
-      lastKey = nextKey;
-      onState(state);
-    }
-    armStaleTimer(state);
   }
 
   function scheduleRefresh(): void {
