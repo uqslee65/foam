@@ -46,6 +46,28 @@ import {
   createHistoryTree,
   type HistoryTreeElement,
 } from './history';
+import { Logger } from '@foam/core';
+
+function isEnoent(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === 'ENOENT'
+  );
+}
+
+async function pathExists(filePath: string): Promise<boolean> {
+  try {
+    await fs.promises.access(filePath);
+    return true;
+  } catch (error) {
+    if (!isEnoent(error)) {
+      Logger.error(error);
+    }
+    return false;
+  }
+}
 
 class SourcesTreeDataProvider implements vscode.TreeDataProvider<SourceElement> {
   readonly _onDidChange = new vscode.EventEmitter<void>();
@@ -53,9 +75,13 @@ class SourcesTreeDataProvider implements vscode.TreeDataProvider<SourceElement> 
 
   constructor(
     private readonly tree: SourceTree,
-    private readonly workspaceRoot: string
+    private workspaceRoot: string
   ) {
     this.tree.onDidChange(() => this._onDidChange.fire());
+  }
+
+  setWorkspaceRoot(workspaceRoot: string): void {
+    this.workspaceRoot = workspaceRoot;
   }
 
   getTreeItem(element: SourceElement): vscode.TreeItem {
@@ -219,40 +245,43 @@ class HistoryTreeDataProvider
   }
 }
 
-function readAgyReceipts(logsCodexDir: string): string[] {
+async function readAgyReceipts(logsCodexDir: string): Promise<string[]> {
+  let entries: fs.Dirent[];
   try {
-    if (!fs.existsSync(logsCodexDir)) {
-      return [];
+    entries = await fs.promises.readdir(logsCodexDir, { withFileTypes: true });
+  } catch (error) {
+    if (!isEnoent(error)) {
+      Logger.error(error);
     }
-    const entries = fs.readdirSync(logsCodexDir, { withFileTypes: true });
-    const receipts: string[] = [];
-    for (const entry of entries) {
-      if (entry.isDirectory()) {
-        const receiptFile = path.join(logsCodexDir, entry.name, 'receipt.json');
-        if (fs.existsSync(receiptFile)) {
-          try {
-            receipts.push(fs.readFileSync(receiptFile, 'utf-8'));
-          } catch {
-            // ignore unreadable
-          }
-        }
-      } else if (
-        entry.isFile() &&
-        (entry.name === 'receipt.json' || entry.name.endsWith('.json'))
-      ) {
-        try {
-          receipts.push(
-            fs.readFileSync(path.join(logsCodexDir, entry.name), 'utf-8')
-          );
-        } catch {
-          // ignore unreadable
-        }
-      }
-    }
-    return receipts;
-  } catch {
     return [];
   }
+
+  const receipts: string[] = [];
+  for (const entry of entries) {
+    const receiptFile = entry.isDirectory()
+      ? path.join(logsCodexDir, entry.name, 'receipt.json')
+      : entry.isFile() &&
+          (entry.name === 'receipt.json' || entry.name.endsWith('.json'))
+        ? path.join(logsCodexDir, entry.name)
+        : null;
+
+    if (receiptFile === null) {
+      continue;
+    }
+
+    try {
+      if (entry.isDirectory()) {
+        await fs.promises.access(receiptFile);
+      }
+      receipts.push(await fs.promises.readFile(receiptFile, 'utf-8'));
+    } catch (error) {
+      if (!isEnoent(error)) {
+        Logger.error(error);
+      }
+    }
+  }
+
+  return receipts;
 }
 
 export function activatePaHub(
@@ -268,10 +297,10 @@ export function activatePaHub(
 
   // 3. Sources tree view
   const researchSourcesDir = path.join(os.homedir(), 'research-sources');
-  const workspaceRoot = fs.existsSync(researchSourcesDir)
-    ? researchSourcesDir
-    : (vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ??
-       path.resolve(tasksDir, '..'));
+  const fallbackWorkspaceRoot =
+    vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ??
+    path.resolve(tasksDir, '..');
+  let workspaceRoot = fallbackWorkspaceRoot;
   const sourcesTree = createSourceTree();
   const sourcesProvider = new SourcesTreeDataProvider(
     sourcesTree,
@@ -282,6 +311,10 @@ export function activatePaHub(
   });
 
   const refreshSources = async () => {
+    workspaceRoot = (await pathExists(researchSourcesDir))
+      ? researchSourcesDir
+      : fallbackWorkspaceRoot;
+    sourcesProvider.setWorkspaceRoot(workspaceRoot);
     const candidates = [
       path.join(workspaceRoot, 'INDEX.md'),
       path.join(workspaceRoot, 'sources.md'),
@@ -298,13 +331,13 @@ export function activatePaHub(
       }
     }
     const topics = parseIndex(content);
-    sourcesTree.refresh(
+    await sourcesTree.refresh(
       topics,
-      relativePath => {
+      async relativePath => {
         const filePath = path.isAbsolute(relativePath)
           ? relativePath
           : path.join(workspaceRoot, relativePath);
-        return fs.existsSync(filePath);
+        return pathExists(filePath);
       },
       relativePath => {
         const filePath = path.isAbsolute(relativePath)
@@ -320,7 +353,7 @@ export function activatePaHub(
     refreshSources
   );
 
-  refreshSources().catch(() => {});
+  refreshSources().catch(err => Logger.error(err));
 
   // 4. Usage tree view
   const usageTree = createUsageTree();
@@ -343,9 +376,13 @@ export function activatePaHub(
   const codexProvider: CodexUsageProvider =
     createCodexUsageProvider(codexRunner);
   const exportSetupDir = path.join(os.homedir(), 'projects', 'export-setup');
-  const logsCodexDir = fs.existsSync(path.join(exportSetupDir, 'logs', 'codex'))
-    ? path.join(exportSetupDir, 'logs', 'codex')
-    : path.join(workspaceRoot, 'logs', 'codex');
+  const preferredLogsCodexDir = path.join(exportSetupDir, 'logs', 'codex');
+  const resolveLogsCodexDir = async (): Promise<string> => {
+    if (await pathExists(preferredLogsCodexDir)) {
+      return preferredLogsCodexDir;
+    }
+    return path.join(workspaceRoot, 'logs', 'codex');
+  };
 
   const claudeStateDir = resolveClaudeStateDir(
     {
@@ -362,14 +399,14 @@ export function activatePaHub(
   let latestAgySnapshot: AgyUsageSnapshot | null = null;
 
   const refreshUsage = async () => {
-    latestClaudeState = readClaudeUsage(claudeStateDir);
     try {
       latestCodexSnapshot = await codexProvider.refresh();
     } catch {
       // codex runner unavailable in this env
     }
-    const receipts = readAgyReceipts(logsCodexDir);
+    const receipts = await readAgyReceipts(await resolveLogsCodexDir());
     latestAgySnapshot = createAgyUsageSnapshot(receipts);
+    latestClaudeState = await readClaudeUsage(claudeStateDir);
     usageTree.update(
       latestClaudeState,
       latestCodexSnapshot,
@@ -492,12 +529,15 @@ export function activatePaHub(
     await historyProvider.refresh(pdcaLogsDir);
   };
 
+  const refreshHistorySafely = () =>
+    refreshHistory().catch(err => Logger.error(err));
+
   const refreshHistoryCommand = vscode.commands.registerCommand(
     'pa-hub.refresh-history',
-    refreshHistory
+    refreshHistorySafely
   );
 
-  refreshHistory();
+  refreshHistorySafely();
 
   const historyWatcher = vscode.workspace.createFileSystemWatcher(
     new vscode.RelativePattern(
@@ -505,9 +545,9 @@ export function activatePaHub(
       '*.yaml'
     )
   );
-  historyWatcher.onDidChange(refreshHistory);
-  historyWatcher.onDidCreate(refreshHistory);
-  historyWatcher.onDidDelete(refreshHistory);
+  historyWatcher.onDidChange(refreshHistorySafely);
+  historyWatcher.onDidCreate(refreshHistorySafely);
+  historyWatcher.onDidDelete(refreshHistorySafely);
 
   context.subscriptions.push(
     sourcesTreeView,
