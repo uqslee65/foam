@@ -9,13 +9,13 @@ export default async function activate(
   foamPromise: Promise<Foam>
 ) {
   context.subscriptions.push(
-    commands.registerCommand('foam-vscode.open-daily-note', async () => {
-      getTelemetry()?.trackCommand('foam-vscode.open-daily-note');
+    commands.registerCommand('pa-hub.open-daily-note', async () => {
+      getTelemetry()?.trackCommand('pa-hub.open-daily-note');
       return openDailyNoteFor(new Date(), await foamPromise);
     })
   );
 
   if (getFoamVsCodeConfig('openDailyNote.onStartup', false)) {
-    commands.executeCommand('foam-vscode.open-daily-note');
+    commands.executeCommand('pa-hub.open-daily-note');
   }
 }

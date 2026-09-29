@@ -11,7 +11,7 @@ export default async function activate(
 ) {
   context.subscriptions.push(
     commands.registerCommand(
-      'foam-vscode.open-daily-note-for-date',
+      'pa-hub.open-daily-note-for-date',
       async () => {
         const ws = (await foamPromise).workspace;
         const date = await window

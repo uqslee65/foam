@@ -1,0 +1,13 @@
+# CLAIM — Codex self-report. Evidence only, never verdict.
+DONE
+
+Files changed:
+- [index.ts](/Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/vscode/features/graph-webview/index.ts)
+- [test_graph_view.test.ts](/Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/pa-hub/tests/test_graph_view.test.ts)
+
+Checks:
+- `k_N10c_1.py` PASS
+- `k_N10c_2.sh` PASS
+- `tsc --noEmit` PASS
+- `git diff --check` PASS
+- Full unit suite: 846 passed, 4 unrelated/out-of-scope failures.

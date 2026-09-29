@@ -1,16 +1,16 @@
 {
-  "name": "foam-vscode",
-  "displayName": "Foam",
-  "description": "VS Code + Markdown + Wikilinks for your note taking and knowledge base",
+  "name": "pa-hub",
+  "displayName": "PA Hub",
+  "description": "PA Hub: Lazarus personal-assistant sidebar (Foam fork) with wikilinks, graph and board",
   "private": true,
   "repository": {
     "url": "https://github.com/foambubble/foam",
     "type": "git"
   },
   "homepage": "https://github.com/foambubble/foam",
-  "version": "0.44.6",
+  "version": "0.44.7",
   "license": "MIT",
-  "publisher": "foam",
+  "publisher": "lazarus",
   "engines": {
     "vscode": "^1.110.0"
   },
@@ -19,7 +19,9 @@
     "Other"
   ],
   "main": "./out/bundles/extension-node.js",
-  "browser": "./out/bundles/extension-web.js",
+  "extensionKind": [
+    "ui"
+  ],
   "capabilities": {
     "untrustedWorkspaces": {
       "supported": "limited",
@@ -37,7 +39,7 @@
     "grammars": [
       {
         "path": "./syntaxes/injection.json",
-        "scopeName": "foam.wikilink.injection",
+        "scopeName": "pa-hub.wikilink.injection",
         "injectTo": [
           "text.html.markdown"
         ]
@@ -45,7 +47,7 @@
     ],
     "colors": [
       {
-        "id": "foam.placeholder",
+        "id": "paHub.placeholder",
         "description": "Color of foam placeholders.",
         "defaults": {
           "dark": "editorWarning.foreground",
@@ -57,118 +59,165 @@
     "views": {
       "explorer": [
         {
-          "id": "foam-vscode.connections",
+          "id": "pa-hub.connections",
           "name": "Connections",
           "icon": "$(references)",
           "contextualTitle": "Foam"
         },
         {
-          "id": "foam-vscode.tags-explorer",
+          "id": "pa-hub.tags-explorer",
           "name": "Tag Explorer",
           "icon": "$(tag)",
           "contextualTitle": "Foam"
         },
         {
-          "id": "foam-vscode.notes-explorer",
+          "id": "pa-hub.notes-explorer",
           "name": "Notes",
           "icon": "$(notebook)",
           "contextualTitle": "Foam"
         },
         {
-          "id": "foam-vscode.orphans",
+          "id": "pa-hub.orphans",
           "name": "Orphans",
           "icon": "$(debug-gripper)",
           "contextualTitle": "Foam"
         },
         {
-          "id": "foam-vscode.placeholders",
+          "id": "pa-hub.placeholders",
           "name": "Placeholders",
           "icon": "$(debug-disconnect)",
           "contextualTitle": "Foam"
         },
         {
-          "id": "foam-vscode.smart-folders",
+          "id": "pa-hub.smart-folders",
           "name": "Smart Folders",
           "icon": "$(folder-library)",
           "contextualTitle": "Foam",
           "initialSize": 0
         },
         {
-          "when": "config.foam.experimental",
-          "id": "foam-vscode.related-notes",
+          "when": "config.pa-hub.experimental",
+          "id": "pa-hub.related-notes",
           "name": "Related Notes (AI)",
           "icon": "$(sparkle)",
           "contextualTitle": "Foam"
+        }
+      ],
+      "pa-hub": [
+        {
+          "id": "pa-hub.graph",
+          "name": "Graph",
+          "type": "webview"
+        },
+        {
+          "id": "pa-hub.tasks",
+          "name": "Tasks"
+        },
+        {
+          "id": "pa-hub.sources",
+          "name": "Sources"
+        },
+        {
+          "id": "pa-hub.usage",
+          "name": "Usage"
+        },
+        {
+          "id": "pa-hub.calendar",
+          "name": "Calendar"
+        },
+        {
+          "id": "pa-hub.history",
+          "name": "PDCA History"
         }
       ]
     },
     "viewsWelcome": [
       {
-        "view": "foam-vscode.tags-explorer",
+        "view": "pa-hub.tags-explorer",
         "contents": "No tags found. Notes that contain tags will show up here. You may add tags to a note with a hashtag (#tag) or by adding a tag list to the front matter (tags: tag1, tag2)."
       },
       {
-        "view": "foam-vscode.connections",
+        "view": "pa-hub.connections",
         "contents": "Nothing found for the selected resource and the current filter."
       },
       {
-        "view": "foam-vscode.orphans",
+        "view": "pa-hub.orphans",
         "contents": "No orphans found. Notes that have no backlinks nor links will show up here."
       },
       {
-        "view": "foam-vscode.placeholders",
+        "view": "pa-hub.placeholders",
         "contents": "No placeholders found for selected resource or workspace."
       },
       {
-        "view": "foam-vscode.smart-folders",
-        "contents": "Smart Folders are saved queries stored in `.foam/queries/`. They group your notes by tag, link, or any other criteria you can express in a query.\n[Create Smart Folder](command:foam-vscode.views.smart-folders.create)\nLearn more about [Smart Folders](https://docs.foam.md/features/smart-folders) and [Foam Queries](https://docs.foam.md/features/foam-queries)."
+        "view": "pa-hub.smart-folders",
+        "contents": "Smart Folders are saved queries stored in `.foam/queries/`. They group your notes by tag, link, or any other criteria you can express in a query.\n[Create Smart Folder](command:pa-hub.views.smart-folders.create)\nLearn more about [Smart Folders](https://docs.foam.md/features/smart-folders) and [Foam Queries](https://docs.foam.md/features/foam-queries)."
       },
       {
-        "view": "foam-vscode.related-notes",
+        "view": "pa-hub.related-notes",
         "contents": "Open a note to see related notes.",
-        "when": "config.foam.experimental && foam.relatedNotes.state == 'no-note'"
+        "when": "config.pa-hub.experimental && pa-hub.relatedNotes.state == 'no-note'"
       },
       {
-        "view": "foam-vscode.related-notes",
-        "contents": "Notes haven't been analyzed yet.\n[Analyze Notes](command:foam-vscode.build-embeddings)\nAnalyze your notes to discover similar content.",
-        "when": "config.foam.experimental && foam.relatedNotes.state == 'no-embedding'"
+        "view": "pa-hub.related-notes",
+        "contents": "Notes haven't been analyzed yet.\n[Analyze Notes](command:pa-hub.build-embeddings)\nAnalyze your notes to discover similar content.",
+        "when": "config.pa-hub.experimental && pa-hub.relatedNotes.state == 'no-embedding'"
       },
       {
-        "view": "foam-vscode.related-notes",
+        "view": "pa-hub.related-notes",
         "contents": "No similar notes found for the current note.",
-        "when": "config.foam.experimental && foam.relatedNotes.state == 'ready'"
+        "when": "config.pa-hub.experimental && pa-hub.relatedNotes.state == 'ready'"
       }
     ],
     "menus": {
       "view/item/context": [
         {
-          "command": "foam-vscode.search-tag",
-          "when": "view == foam-vscode.tags-explorer && viewItem == tag",
+          "command": "pa-hub.search-tag",
+          "when": "view == pa-hub.tags-explorer && viewItem == tag",
           "group": "inline",
           "icon": "$(search)"
         },
         {
-          "command": "foam-vscode.rename-tag",
-          "when": "view == foam-vscode.tags-explorer && viewItem == tag",
+          "command": "pa-hub.rename-tag",
+          "when": "view == pa-hub.tags-explorer && viewItem == tag",
           "group": "inline",
           "icon": "$(edit)"
         },
         {
-          "command": "foam-vscode.views.smart-folders.edit",
-          "when": "view == foam-vscode.smart-folders && (viewItem == smart-folder || viewItem == smart-folder-error)",
+          "command": "pa-hub.views.smart-folders.edit",
+          "when": "view == pa-hub.smart-folders && (viewItem == smart-folder || viewItem == smart-folder-error)",
           "group": "inline@1",
           "icon": "$(edit)"
         },
         {
-          "command": "foam-vscode.views.smart-folders.delete",
-          "when": "view == foam-vscode.smart-folders && (viewItem == smart-folder || viewItem == smart-folder-error)",
+          "command": "pa-hub.views.smart-folders.delete",
+          "when": "view == pa-hub.smart-folders && (viewItem == smart-folder || viewItem == smart-folder-error)",
           "group": "inline@2",
           "icon": "$(trash)"
+        },
+        {
+          "command": "pa-hub.task-move-up",
+          "when": "view == pa-hub.tasks && viewItem == taskItem",
+          "group": "inline@1"
+        },
+        {
+          "command": "pa-hub.task-move-down",
+          "when": "view == pa-hub.tasks && viewItem == taskItem",
+          "group": "inline@2"
+        },
+        {
+          "command": "pa-hub.task-set-quadrant",
+          "when": "view == pa-hub.tasks && viewItem == taskItem",
+          "group": "inline@3"
+        },
+        {
+          "command": "pa-hub.task-dispatch",
+          "when": "view == pa-hub.tasks && viewItem == taskItem",
+          "group": "inline@4"
         }
       ],
       "editor/context": [
         {
-          "command": "foam-vscode.rename-tag",
+          "command": "pa-hub.rename-tag",
           "when": "editorTextFocus && resourceExtname == '.md'",
           "group": "foam",
           "title": "Rename Tag"
@@ -176,536 +225,625 @@
       ],
       "view/title": [
         {
-          "command": "foam-vscode.views.connections.show:backlinks",
-          "when": "view == foam-vscode.connections && foam-vscode.views.connections.show == 'all links'",
+          "command": "pa-hub.views.connections.show:backlinks",
+          "when": "view == pa-hub.connections && pa-hub.views.connections.show == 'all links'",
           "group": "navigation@1"
         },
         {
-          "command": "foam-vscode.views.connections.show:forward-links",
-          "when": "view == foam-vscode.connections && foam-vscode.views.connections.show == 'backlinks'",
+          "command": "pa-hub.views.connections.show:forward-links",
+          "when": "view == pa-hub.connections && pa-hub.views.connections.show == 'backlinks'",
           "group": "navigation@1"
         },
         {
-          "command": "foam-vscode.views.connections.show:all-links",
-          "when": "view == foam-vscode.connections && foam-vscode.views.connections.show == 'forward links'",
+          "command": "pa-hub.views.connections.show:all-links",
+          "when": "view == pa-hub.connections && pa-hub.views.connections.show == 'forward links'",
           "group": "navigation@1"
         },
         {
-          "command": "foam-vscode.views.connections.include:notes-only",
-          "when": "view == foam-vscode.connections && foam-vscode.views.connections.include == 'all'",
+          "command": "pa-hub.views.connections.include:notes-only",
+          "when": "view == pa-hub.connections && pa-hub.views.connections.include == 'all'",
           "group": "navigation@2"
         },
         {
-          "command": "foam-vscode.views.connections.include:all",
-          "when": "view == foam-vscode.connections && foam-vscode.views.connections.include == 'notes-only'",
+          "command": "pa-hub.views.connections.include:all",
+          "when": "view == pa-hub.connections && pa-hub.views.connections.include == 'notes-only'",
           "group": "navigation@2"
         },
         {
-          "command": "foam-vscode.views.orphans.group-by:folder",
-          "when": "view == foam-vscode.orphans && foam-vscode.views.orphans.group-by == 'off'",
+          "command": "pa-hub.views.orphans.group-by:folder",
+          "when": "view == pa-hub.orphans && pa-hub.views.orphans.group-by == 'off'",
           "group": "navigation@1"
         },
         {
-          "command": "foam-vscode.views.orphans.group-by:off",
-          "when": "view == foam-vscode.orphans && foam-vscode.views.orphans.group-by == 'folder'",
+          "command": "pa-hub.views.orphans.group-by:off",
+          "when": "view == pa-hub.orphans && pa-hub.views.orphans.group-by == 'folder'",
           "group": "navigation@1"
         },
         {
-          "command": "foam-vscode.views.tags-explorer.show:for-current-file",
-          "when": "view == foam-vscode.tags-explorer && foam-vscode.views.tags-explorer.show == 'all'",
+          "command": "pa-hub.views.tags-explorer.show:for-current-file",
+          "when": "view == pa-hub.tags-explorer && pa-hub.views.tags-explorer.show == 'all'",
           "group": "navigation@1"
         },
         {
-          "command": "foam-vscode.views.tags-explorer.show:all",
-          "when": "view == foam-vscode.tags-explorer && foam-vscode.views.tags-explorer.show == 'for-current-file'",
+          "command": "pa-hub.views.tags-explorer.show:all",
+          "when": "view == pa-hub.tags-explorer && pa-hub.views.tags-explorer.show == 'for-current-file'",
           "group": "navigation@1"
         },
         {
-          "command": "foam-vscode.views.tags-explorer.group-by:folder",
-          "when": "view == foam-vscode.tags-explorer && foam-vscode.views.tags-explorer.group-by == 'off'",
+          "command": "pa-hub.views.tags-explorer.group-by:folder",
+          "when": "view == pa-hub.tags-explorer && pa-hub.views.tags-explorer.group-by == 'off'",
           "group": "navigation@2"
         },
         {
-          "command": "foam-vscode.views.tags-explorer.group-by:off",
-          "when": "view == foam-vscode.tags-explorer && foam-vscode.views.tags-explorer.group-by == 'folder'",
+          "command": "pa-hub.views.tags-explorer.group-by:off",
+          "when": "view == pa-hub.tags-explorer && pa-hub.views.tags-explorer.group-by == 'folder'",
           "group": "navigation@2"
         },
         {
-          "command": "foam-vscode.views.tags-explorer.expand-all",
-          "when": "view == foam-vscode.tags-explorer",
+          "command": "pa-hub.views.tags-explorer.expand-all",
+          "when": "view == pa-hub.tags-explorer",
           "group": "navigation@3"
         },
         {
-          "command": "foam-vscode.views.placeholders.show:for-current-file",
-          "when": "view == foam-vscode.placeholders && foam-vscode.views.placeholders.show == 'all'",
+          "command": "pa-hub.views.placeholders.show:for-current-file",
+          "when": "view == pa-hub.placeholders && pa-hub.views.placeholders.show == 'all'",
           "group": "navigation@1"
         },
         {
-          "command": "foam-vscode.views.placeholders.show:all",
-          "when": "view == foam-vscode.placeholders && foam-vscode.views.placeholders.show == 'for-current-file'",
+          "command": "pa-hub.views.placeholders.show:all",
+          "when": "view == pa-hub.placeholders && pa-hub.views.placeholders.show == 'for-current-file'",
           "group": "navigation@1"
         },
         {
-          "command": "foam-vscode.views.placeholders.group-by:folder",
-          "when": "view == foam-vscode.placeholders && foam-vscode.views.placeholders.group-by == 'off'",
+          "command": "pa-hub.views.placeholders.group-by:folder",
+          "when": "view == pa-hub.placeholders && pa-hub.views.placeholders.group-by == 'off'",
           "group": "navigation@2"
         },
         {
-          "command": "foam-vscode.views.placeholders.group-by:off",
-          "when": "view == foam-vscode.placeholders && foam-vscode.views.placeholders.group-by == 'folder'",
+          "command": "pa-hub.views.placeholders.group-by:off",
+          "when": "view == pa-hub.placeholders && pa-hub.views.placeholders.group-by == 'folder'",
           "group": "navigation@2"
         },
         {
-          "command": "foam-vscode.views.placeholders.expand-all",
-          "when": "view == foam-vscode.placeholders",
+          "command": "pa-hub.views.placeholders.expand-all",
+          "when": "view == pa-hub.placeholders",
           "group": "navigation@3"
         },
         {
-          "command": "foam-vscode.views.notes-explorer.connections:toggle",
-          "when": "view == foam-vscode.notes-explorer",
+          "command": "pa-hub.views.notes-explorer.connections:toggle",
+          "when": "view == pa-hub.notes-explorer",
           "group": "navigation@1"
         },
         {
-          "command": "foam-vscode.views.notes-explorer.include:notes-only",
-          "when": "view == foam-vscode.notes-explorer && foam-vscode.views.notes-explorer.include == 'all'",
+          "command": "pa-hub.views.notes-explorer.include:notes-only",
+          "when": "view == pa-hub.notes-explorer && pa-hub.views.notes-explorer.include == 'all'",
           "group": "navigation@2"
         },
         {
-          "command": "foam-vscode.views.notes-explorer.include:all",
-          "when": "view == foam-vscode.notes-explorer && foam-vscode.views.notes-explorer.include == 'notes-only'",
+          "command": "pa-hub.views.notes-explorer.include:all",
+          "when": "view == pa-hub.notes-explorer && pa-hub.views.notes-explorer.include == 'notes-only'",
           "group": "navigation@2"
         },
         {
-          "command": "foam-vscode.views.notes-explorer.view:toggle",
-          "when": "view == foam-vscode.notes-explorer",
+          "command": "pa-hub.views.notes-explorer.view:toggle",
+          "when": "view == pa-hub.notes-explorer",
           "group": "navigation@3"
         },
         {
-          "command": "foam-vscode.views.notes-explorer.set-filter",
-          "when": "view == foam-vscode.notes-explorer",
+          "command": "pa-hub.views.notes-explorer.set-filter",
+          "when": "view == pa-hub.notes-explorer",
           "group": "navigation@4"
         },
         {
-          "command": "foam-vscode.views.notes-explorer.clear-filter",
-          "when": "view == foam-vscode.notes-explorer && foam-vscode.views.notes-explorer.filter-active",
+          "command": "pa-hub.views.notes-explorer.clear-filter",
+          "when": "view == pa-hub.notes-explorer && pa-hub.views.notes-explorer.filter-active",
           "group": "navigation@5"
         },
         {
-          "command": "foam-vscode.views.notes-explorer.collapse-all",
-          "when": "view == foam-vscode.notes-explorer && foam-vscode.views.notes-explorer.view-mode != 'flat'",
+          "command": "pa-hub.views.notes-explorer.collapse-all",
+          "when": "view == pa-hub.notes-explorer && pa-hub.views.notes-explorer.view-mode != 'flat'",
           "group": "navigation@6"
         },
         {
-          "command": "foam-vscode.views.smart-folders.create",
-          "when": "view == foam-vscode.smart-folders",
+          "command": "pa-hub.views.smart-folders.create",
+          "when": "view == pa-hub.smart-folders",
           "group": "navigation@1"
         },
         {
-          "command": "foam-vscode.views.smart-folders.group-by:folder",
-          "when": "view == foam-vscode.smart-folders && foam-vscode.views.smart-folders.group-by == 'off'",
+          "command": "pa-hub.views.smart-folders.group-by:folder",
+          "when": "view == pa-hub.smart-folders && pa-hub.views.smart-folders.group-by == 'off'",
           "group": "navigation@2"
         },
         {
-          "command": "foam-vscode.views.smart-folders.group-by:off",
-          "when": "view == foam-vscode.smart-folders && foam-vscode.views.smart-folders.group-by == 'folder'",
+          "command": "pa-hub.views.smart-folders.group-by:off",
+          "when": "view == pa-hub.smart-folders && pa-hub.views.smart-folders.group-by == 'folder'",
           "group": "navigation@2"
         },
         {
-          "command": "foam-vscode.views.smart-folders.refresh",
-          "when": "view == foam-vscode.smart-folders",
+          "command": "pa-hub.views.smart-folders.refresh",
+          "when": "view == pa-hub.smart-folders",
           "group": "navigation@3"
+        },
+        {
+          "command": "pa-hub.show-graph",
+          "when": "view == pa-hub.tasks || view == pa-hub.sources || view == pa-hub.usage",
+          "group": "navigation"
         }
       ],
       "commandPalette": [
         {
-          "command": "foam-vscode.export-html-page",
-          "when": "config.foam.experimental"
+          "command": "pa-hub.export-html-page",
+          "when": "config.pa-hub.experimental"
         },
         {
-          "command": "foam-vscode.show-similar-notes",
-          "when": "config.foam.experimental"
+          "command": "pa-hub.show-similar-notes",
+          "when": "config.pa-hub.experimental"
         },
         {
-          "command": "foam-vscode.build-embeddings",
-          "when": "config.foam.experimental"
+          "command": "pa-hub.build-embeddings",
+          "when": "config.pa-hub.experimental"
         },
         {
-          "command": "foam-vscode.create-note-from-default-template",
+          "command": "pa-hub.create-note-from-default-template",
           "when": "false"
         },
         {
-          "command": "foam-vscode.update-graph",
+          "command": "pa-hub.update-graph",
           "when": "false"
         },
         {
-          "command": "foam-vscode.views.connections.show:all-links",
+          "command": "pa-hub.views.connections.show:all-links",
           "when": "false"
         },
         {
-          "command": "foam-vscode.views.connections.show:backlinks",
+          "command": "pa-hub.views.connections.show:backlinks",
           "when": "false"
         },
         {
-          "command": "foam-vscode.views.connections.show:forward-links",
+          "command": "pa-hub.views.connections.show:forward-links",
           "when": "false"
         },
         {
-          "command": "foam-vscode.views.connections.include:notes-only",
+          "command": "pa-hub.views.connections.include:notes-only",
           "when": "false"
         },
         {
-          "command": "foam-vscode.views.connections.include:all",
+          "command": "pa-hub.views.connections.include:all",
           "when": "false"
         },
         {
-          "command": "foam-vscode.views.notes-explorer.include:notes-only",
+          "command": "pa-hub.views.notes-explorer.include:notes-only",
           "when": "false"
         },
         {
-          "command": "foam-vscode.views.notes-explorer.include:all",
+          "command": "pa-hub.views.notes-explorer.include:all",
           "when": "false"
         },
         {
-          "command": "foam-vscode.views.orphans.group-by:folder",
+          "command": "pa-hub.views.orphans.group-by:folder",
           "when": "false"
         },
         {
-          "command": "foam-vscode.views.orphans.group-by:off",
+          "command": "pa-hub.views.orphans.group-by:off",
           "when": "false"
         },
         {
-          "command": "foam-vscode.views.tags-explorer.show:for-current-file",
+          "command": "pa-hub.views.tags-explorer.show:for-current-file",
           "when": "false"
         },
         {
-          "command": "foam-vscode.views.tags-explorer.show:all",
+          "command": "pa-hub.views.tags-explorer.show:all",
           "when": "false"
         },
         {
-          "command": "foam-vscode.views.tags-explorer.group-by:folder",
+          "command": "pa-hub.views.tags-explorer.group-by:folder",
           "when": "false"
         },
         {
-          "command": "foam-vscode.views.tags-explorer.group-by:off",
+          "command": "pa-hub.views.tags-explorer.group-by:off",
           "when": "false"
         },
         {
-          "command": "foam-vscode.views.tags-explorer.expand-all",
+          "command": "pa-hub.views.tags-explorer.expand-all",
           "when": "false"
         },
         {
-          "command": "foam-vscode.views.placeholders.show:for-current-file",
+          "command": "pa-hub.views.placeholders.show:for-current-file",
           "when": "false"
         },
         {
-          "command": "foam-vscode.views.placeholders.show:all",
+          "command": "pa-hub.views.placeholders.show:all",
           "when": "false"
         },
         {
-          "command": "foam-vscode.views.placeholders.group-by:folder",
+          "command": "pa-hub.views.placeholders.group-by:folder",
           "when": "false"
         },
         {
-          "command": "foam-vscode.views.placeholders.group-by:off",
+          "command": "pa-hub.views.placeholders.group-by:off",
           "when": "false"
         },
         {
-          "command": "foam-vscode.views.placeholders.expand-all",
+          "command": "pa-hub.views.placeholders.expand-all",
           "when": "false"
         },
         {
-          "command": "foam-vscode.open-resource",
+          "command": "pa-hub.open-resource",
           "when": "false"
         },
         {
-          "command": "foam-vscode.completion-move-cursor",
+          "command": "pa-hub.completion-move-cursor",
           "when": "false"
         },
         {
-          "command": "foam-vscode.views.smart-folders.group-by:folder",
+          "command": "pa-hub.views.smart-folders.group-by:folder",
           "when": "false"
         },
         {
-          "command": "foam-vscode.views.smart-folders.group-by:off",
+          "command": "pa-hub.views.smart-folders.group-by:off",
           "when": "false"
         },
         {
-          "command": "foam-vscode.views.smart-folders.refresh",
+          "command": "pa-hub.views.smart-folders.refresh",
           "when": "false"
         }
       ]
     },
     "commands": [
       {
-        "command": "foam-vscode.show-whats-new",
-        "title": "Foam: Show What's New"
+        "command": "pa-hub.show-whats-new",
+        "title": "Foam: Show What's New",
+        "category": "PA Hub"
       },
       {
-        "command": "foam-vscode.create-note",
-        "title": "Foam: Create New Note"
+        "command": "pa-hub.create-note",
+        "title": "Foam: Create New Note",
+        "category": "PA Hub"
       },
       {
-        "command": "foam-vscode.export-html-page",
-        "title": "Foam: Export to HTML page"
+        "command": "pa-hub.export-html-page",
+        "title": "Foam: Export to HTML page",
+        "category": "PA Hub"
       },
       {
-        "command": "foam-vscode.clear-cache",
-        "title": "Foam: Clear Cache"
+        "command": "pa-hub.clear-cache",
+        "title": "Foam: Clear Cache",
+        "category": "PA Hub"
       },
       {
-        "command": "foam-vscode.update-graph",
-        "title": "Foam: Update Graph"
+        "command": "pa-hub.update-graph",
+        "title": "Foam: Update Graph",
+        "category": "PA Hub"
       },
       {
-        "command": "foam-vscode.set-log-level",
-        "title": "Foam: Set Log Level"
+        "command": "pa-hub.set-log-level",
+        "title": "Foam: Set Log Level",
+        "category": "PA Hub"
       },
       {
-        "command": "foam-vscode.show-graph",
-        "title": "Foam: Show Graph"
+        "command": "pa-hub.show-graph",
+        "title": "Foam: Show Graph",
+        "category": "PA Hub"
       },
       {
-        "command": "foam-vscode.update-wikilink-definitions",
-        "title": "Foam: Update Wikilink Definitions"
+        "command": "pa-hub.update-wikilink-definitions",
+        "title": "Foam: Update Wikilink Definitions",
+        "category": "PA Hub"
       },
       {
-        "command": "foam-vscode.open-daily-note",
-        "title": "Foam: Open Today's Note"
+        "command": "pa-hub.open-daily-note",
+        "title": "Foam: Open Today's Note",
+        "category": "PA Hub"
       },
       {
-        "command": "foam-vscode.open-daily-note-for-date",
-        "title": "Foam: Open Daily Note"
+        "command": "pa-hub.open-daily-note-for-date",
+        "title": "Foam: Open Daily Note",
+        "category": "PA Hub"
       },
       {
-        "command": "foam-vscode.open-random-note",
-        "title": "Foam: Open Random Note"
+        "command": "pa-hub.open-random-note",
+        "title": "Foam: Open Random Note",
+        "category": "PA Hub"
       },
       {
-        "command": "foam-vscode.lint",
-        "title": "Foam: Lint Workspace (Experimental)"
+        "command": "pa-hub.lint",
+        "title": "Foam: Lint Workspace (Experimental)",
+        "category": "PA Hub"
       },
       {
-        "command": "foam-vscode.copy-without-brackets",
-        "title": "Foam: Copy To Clipboard Without Brackets"
+        "command": "pa-hub.copy-without-brackets",
+        "title": "Foam: Copy To Clipboard Without Brackets",
+        "category": "PA Hub"
       },
       {
-        "command": "foam-vscode.create-note-from-template",
-        "title": "Foam: Create New Note From Template"
+        "command": "pa-hub.create-note-from-template",
+        "title": "Foam: Create New Note From Template",
+        "category": "PA Hub"
       },
       {
-        "command": "foam-vscode.create-note-from-default-template",
-        "title": "Foam: Create New Note"
+        "command": "pa-hub.create-note-from-default-template",
+        "title": "Foam: Create New Note",
+        "category": "PA Hub"
       },
       {
-        "command": "foam-vscode.open-resource",
-        "title": "Foam: Open Resource"
+        "command": "pa-hub.open-resource",
+        "title": "Foam: Open Resource",
+        "category": "PA Hub"
       },
       {
-        "command": "foam-vscode.convert-wikilink-to-mdlink",
-        "title": "Foam: Convert Wikilink to Markdown Link"
+        "command": "pa-hub.convert-wikilink-to-mdlink",
+        "title": "Foam: Convert Wikilink to Markdown Link",
+        "category": "PA Hub"
       },
       {
-        "command": "foam-vscode.convert-mdlink-to-wikilink",
-        "title": "Foam: Convert Markdown Link to Wikilink"
+        "command": "pa-hub.convert-mdlink-to-wikilink",
+        "title": "Foam: Convert Markdown Link to Wikilink",
+        "category": "PA Hub"
       },
       {
-        "command": "foam-vscode.search-tag",
+        "command": "pa-hub.search-tag",
         "title": "Foam: Search Tag",
+        "category": "PA Hub",
         "icon": "$(search)"
       },
       {
-        "command": "foam-vscode.rename-tag",
+        "command": "pa-hub.rename-tag",
         "title": "Foam: Rename Tag",
+        "category": "PA Hub",
         "icon": "$(edit)"
       },
       {
-        "command": "foam-vscode.show-similar-notes",
-        "title": "Foam: Show Similar Notes"
+        "command": "pa-hub.show-similar-notes",
+        "title": "Foam: Show Similar Notes",
+        "category": "PA Hub"
       },
       {
-        "command": "foam-vscode.build-embeddings",
-        "title": "Foam: Build Embeddings Index"
+        "command": "pa-hub.build-embeddings",
+        "title": "Foam: Build Embeddings Index",
+        "category": "PA Hub"
       },
       {
-        "command": "foam-vscode.views.orphans.group-by:folder",
+        "command": "pa-hub.views.orphans.group-by:folder",
         "title": "Group By Folder",
+        "category": "PA Hub",
         "icon": "$(list-tree)"
       },
       {
-        "command": "foam-vscode.views.connections.show:backlinks",
+        "command": "pa-hub.views.connections.show:backlinks",
         "title": "Show Backlinks",
+        "category": "PA Hub",
         "icon": "$(arrow-left)"
       },
       {
-        "command": "foam-vscode.views.connections.show:forward-links",
+        "command": "pa-hub.views.connections.show:forward-links",
         "title": "Show Links",
+        "category": "PA Hub",
         "icon": "$(arrow-right)"
       },
       {
-        "command": "foam-vscode.views.connections.show:all-links",
+        "command": "pa-hub.views.connections.show:all-links",
         "title": "Show All",
+        "category": "PA Hub",
         "icon": "$(arrow-swap)"
       },
       {
-        "command": "foam-vscode.views.connections.include:notes-only",
+        "command": "pa-hub.views.connections.include:notes-only",
         "title": "Show notes only",
+        "category": "PA Hub",
         "icon": "$(markdown)"
       },
       {
-        "command": "foam-vscode.views.connections.include:all",
+        "command": "pa-hub.views.connections.include:all",
         "title": "Show all files",
+        "category": "PA Hub",
         "icon": "$(file-media)"
       },
       {
-        "command": "foam-vscode.views.orphans.group-by:off",
+        "command": "pa-hub.views.orphans.group-by:off",
         "title": "Flat list",
+        "category": "PA Hub",
         "icon": "$(list-flat)"
       },
       {
-        "command": "foam-vscode.views.tags-explorer.show:for-current-file",
+        "command": "pa-hub.views.tags-explorer.show:for-current-file",
         "title": "Show tags in current file",
+        "category": "PA Hub",
         "icon": "$(file)"
       },
       {
-        "command": "foam-vscode.views.tags-explorer.show:all",
+        "command": "pa-hub.views.tags-explorer.show:all",
         "title": "Show tags in workspace",
+        "category": "PA Hub",
         "icon": "$(files)"
       },
       {
-        "command": "foam-vscode.views.tags-explorer.group-by:folder",
+        "command": "pa-hub.views.tags-explorer.group-by:folder",
         "title": "Group By Folder",
+        "category": "PA Hub",
         "icon": "$(list-tree)"
       },
       {
-        "command": "foam-vscode.views.tags-explorer.group-by:off",
+        "command": "pa-hub.views.tags-explorer.group-by:off",
         "title": "Flat list",
+        "category": "PA Hub",
         "icon": "$(list-flat)"
       },
       {
-        "command": "foam-vscode.views.tags-explorer.expand-all",
+        "command": "pa-hub.views.tags-explorer.expand-all",
         "title": "Expand all",
+        "category": "PA Hub",
         "icon": "$(expand-all)"
       },
       {
-        "command": "foam-vscode.views.tags-explorer.focus",
+        "command": "pa-hub.views.tags-explorer.focus",
         "title": "Focus on tag",
+        "category": "PA Hub",
         "icon": "$(symbol-number)"
       },
       {
-        "command": "foam-vscode.views.placeholders.show:for-current-file",
+        "command": "pa-hub.views.placeholders.show:for-current-file",
         "title": "Show placeholders in current file",
+        "category": "PA Hub",
         "icon": "$(file)"
       },
       {
-        "command": "foam-vscode.views.placeholders.show:all",
+        "command": "pa-hub.views.placeholders.show:all",
         "title": "Show placeholders in workspace",
+        "category": "PA Hub",
         "icon": "$(files)"
       },
       {
-        "command": "foam-vscode.views.placeholders.group-by:folder",
+        "command": "pa-hub.views.placeholders.group-by:folder",
         "title": "Group By Folder",
+        "category": "PA Hub",
         "icon": "$(list-tree)"
       },
       {
-        "command": "foam-vscode.views.placeholders.group-by:off",
+        "command": "pa-hub.views.placeholders.group-by:off",
         "title": "Flat list",
+        "category": "PA Hub",
         "icon": "$(list-flat)"
       },
       {
-        "command": "foam-vscode.views.placeholders.expand-all",
+        "command": "pa-hub.views.placeholders.expand-all",
         "title": "Expand all",
+        "category": "PA Hub",
         "icon": "$(expand-all)"
       },
       {
-        "command": "foam-vscode.views.notes-explorer.include:notes-only",
+        "command": "pa-hub.views.notes-explorer.include:notes-only",
         "title": "Show notes only",
+        "category": "PA Hub",
         "icon": "$(markdown)"
       },
       {
-        "command": "foam-vscode.views.notes-explorer.include:all",
+        "command": "pa-hub.views.notes-explorer.include:all",
         "title": "Show all files",
+        "category": "PA Hub",
         "icon": "$(file-media)"
       },
       {
-        "command": "foam-vscode.views.notes-explorer.collapse-all",
+        "command": "pa-hub.views.notes-explorer.collapse-all",
         "title": "Collapse all",
+        "category": "PA Hub",
         "icon": "$(collapse-all)"
       },
       {
-        "command": "foam-vscode.views.notes-explorer.set-filter",
+        "command": "pa-hub.views.notes-explorer.set-filter",
         "title": "Filter Notes",
+        "category": "PA Hub",
         "icon": "$(filter)"
       },
       {
-        "command": "foam-vscode.views.notes-explorer.clear-filter",
+        "command": "pa-hub.views.notes-explorer.clear-filter",
         "title": "Clear Filter",
+        "category": "PA Hub",
         "icon": "$(filter-filled)"
       },
       {
-        "command": "foam-vscode.views.notes-explorer.connections:toggle",
+        "command": "pa-hub.views.notes-explorer.connections:toggle",
         "title": "Toggle Connections",
+        "category": "PA Hub",
         "icon": "$(arrow-swap)"
       },
       {
-        "command": "foam-vscode.views.notes-explorer.view:toggle",
+        "command": "pa-hub.views.notes-explorer.view:toggle",
         "title": "Toggle: Hierarchy / Flat List",
+        "category": "PA Hub",
         "icon": "$(list-tree)"
       },
       {
-        "command": "foam-vscode.create-new-template",
-        "title": "Foam: Create New Template"
+        "command": "pa-hub.create-new-template",
+        "title": "Foam: Create New Template",
+        "category": "PA Hub"
       },
       {
-        "command": "foam-vscode.completion-move-cursor",
-        "title": "Foam: Move cursor after completion"
+        "command": "pa-hub.completion-move-cursor",
+        "title": "Foam: Move cursor after completion",
+        "category": "PA Hub"
       },
       {
-        "command": "foam-vscode.views.smart-folders.create",
+        "command": "pa-hub.views.smart-folders.create",
         "title": "Foam: Create Smart Folder",
+        "category": "PA Hub",
         "icon": "$(add)"
       },
       {
-        "command": "foam-vscode.views.smart-folders.edit",
+        "command": "pa-hub.views.smart-folders.edit",
         "title": "Foam: Edit Smart Folder",
+        "category": "PA Hub",
         "icon": "$(edit)"
       },
       {
-        "command": "foam-vscode.views.smart-folders.delete",
+        "command": "pa-hub.views.smart-folders.delete",
         "title": "Foam: Delete Smart Folder",
+        "category": "PA Hub",
         "icon": "$(trash)"
       },
       {
-        "command": "foam-vscode.views.smart-folders.refresh",
+        "command": "pa-hub.views.smart-folders.refresh",
         "title": "Refresh Smart Folders",
+        "category": "PA Hub",
         "icon": "$(refresh)"
       },
       {
-        "command": "foam-vscode.views.smart-folders.group-by:folder",
+        "command": "pa-hub.views.smart-folders.group-by:folder",
         "title": "Group By Folder",
+        "category": "PA Hub",
         "icon": "$(list-tree)"
       },
       {
-        "command": "foam-vscode.views.smart-folders.group-by:off",
+        "command": "pa-hub.views.smart-folders.group-by:off",
         "title": "Flat list",
+        "category": "PA Hub",
         "icon": "$(list-flat)"
+      },
+      {
+        "command": "pa-hub.open-board",
+        "title": "Open Board",
+        "category": "PA Hub"
+      },
+      {
+        "command": "pa-hub.task-move-up",
+        "title": "Move Task Up",
+        "category": "PA Hub",
+        "icon": "$(arrow-up)"
+      },
+      {
+        "command": "pa-hub.task-move-down",
+        "title": "Move Task Down",
+        "category": "PA Hub",
+        "icon": "$(arrow-down)"
+      },
+      {
+        "command": "pa-hub.task-set-quadrant",
+        "title": "Set Quadrant",
+        "category": "PA Hub",
+        "icon": "$(tag)"
+      },
+      {
+        "command": "pa-hub.task-dispatch",
+        "title": "Dispatch Task",
+        "category": "PA Hub",
+        "icon": "$(run)"
       }
     ],
     "configuration": {
       "title": "Foam",
       "properties": {
-        "foam.experimental": {
+        "pa-hub.experimental": {
           "type": "boolean",
           "default": false,
           "description": "Enable experimental features (AI-powered similar/related notes, export to HTML page). Experimental features may change or be removed at any time."
         },
-        "foam.supportedLanguages": {
+        "pa-hub.supportedLanguages": {
           "type": "array",
           "default": [
             "markdown"
           ],
           "description": "List of languages to treat as Markdown-like documents."
         },
-        "foam.completion.label": {
+        "pa-hub.completion.label": {
           "type": "string",
           "default": "path",
           "description": "Describes what note property to use as a label for completion items",
@@ -720,7 +858,7 @@
             "Use the identifier of the note"
           ]
         },
-        "foam.completion.useAlias": {
+        "pa-hub.completion.useAlias": {
           "type": "string",
           "default": "never",
           "description": "Specifies in which cases to use an alias when creating a wikilink",
@@ -733,7 +871,7 @@
             "Use alias if resource path is different from title"
           ]
         },
-        "foam.completion.linkFormat": {
+        "pa-hub.completion.linkFormat": {
           "type": "string",
           "default": "wikilink",
           "description": "Controls the format of completed links",
@@ -746,15 +884,15 @@
             "Complete as markdown links (e.g., [Note Name](note-name.md))"
           ]
         },
-        "foam.files.ignore": {
+        "pa-hub.files.ignore": {
           "type": [
             "array"
           ],
           "default": [],
           "description": "Specifies the list of globs that will be ignored by Foam (e.g. they will not be considered when creating the graph). To ignore all the content of a given folder, use `<folderName>/**/*`",
-          "deprecationMessage": "Use 'foam.files.exclude' instead. This setting will be removed in a future version."
+          "deprecationMessage": "Use 'pa-hub.files.exclude' instead. This setting will be removed in a future version."
         },
-        "foam.files.exclude": {
+        "pa-hub.files.exclude": {
           "type": [
             "array"
           ],
@@ -778,9 +916,9 @@
             "**/.cache/**/*",
             "**/__pycache__/**/*"
           ],
-          "description": "Specifies the list of globs that will be excluded by Foam (e.g. they will not be considered when creating the graph). To exclude all the content of a given folder, use `<folderName>/**/*`. This setting is combined with 'foam.files.ignore' (deprecated) and 'files.exclude'."
+          "description": "Specifies the list of globs that will be excluded by Foam (e.g. they will not be considered when creating the graph). To exclude all the content of a given folder, use `<folderName>/**/*`. This setting is combined with 'pa-hub.files.ignore' (deprecated) and 'files.exclude'."
         },
-        "foam.files.include": {
+        "pa-hub.files.include": {
           "type": [
             "array"
           ],
@@ -789,27 +927,27 @@
           ],
           "description": "Specifies the list of glob patterns for files to include in Foam. Files must match at least one include pattern and not match any exclude patterns. Use this to limit Foam to specific directories (e.g., [\"notes/**\"]) or file types (e.g., [\"**/*.md\"]). Defaults to all files."
         },
-        "foam.files.attachmentExtensions": {
+        "pa-hub.files.attachmentExtensions": {
           "type": "string",
           "default": "pdf mp3 webm wav m4a mp4 avi mov rtf txt doc docx pages xls xlsx numbers ppt pptm pptx",
           "description": "Space separated list of file extensions that will be considered attachments"
         },
-        "foam.files.notesExtensions": {
+        "pa-hub.files.notesExtensions": {
           "type": "string",
           "default": "",
           "description": "Space separated list of extra file extensions that will be considered text notes (e.g. 'mdx txt markdown')"
         },
-        "foam.files.defaultNoteExtension": {
+        "pa-hub.files.defaultNoteExtension": {
           "type": "string",
           "default": "md",
           "description": "The default extension for new notes"
         },
-        "foam.templates.folder": {
+        "pa-hub.templates.folder": {
           "type": "string",
           "default": ".foam/templates",
           "description": "The folder where Foam looks for note templates, relative to the workspace root."
         },
-        "foam.files.newNotePath": {
+        "pa-hub.files.newNotePath": {
           "type": "string",
           "default": "root",
           "description": "Specifies where to create a new note. It is overruled by the template or command arguments",
@@ -822,7 +960,7 @@
             "Use the directory of the file in the current editor"
           ]
         },
-        "foam.logging.level": {
+        "pa-hub.logging.level": {
           "type": "string",
           "default": "info",
           "enum": [
@@ -833,7 +971,7 @@
             "error"
           ]
         },
-        "foam.edit.linkReferenceDefinitions": {
+        "pa-hub.edit.linkReferenceDefinitions": {
           "type": "string",
           "default": "off",
           "enum": [
@@ -847,7 +985,7 @@
             "Disable wikilink definitions generation"
           ]
         },
-        "foam.links.directory.mode": {
+        "pa-hub.links.directory.mode": {
           "type": "string",
           "default": "resolve",
           "description": "Controls how links to a directory name (e.g. [[bar]] or [label](bar)) are resolved. 'resolve' looks for an index file inside the directory (index.<ext> then README.<ext>). 'disabled' restores strict file-only resolution.",
@@ -860,37 +998,37 @@
             "Disable directory link resolution; only exact file matches are used"
           ]
         },
-        "foam.links.sync.enable": {
+        "pa-hub.links.sync.enable": {
           "description": "Automatically update wikilinks when a note is renamed or moved. For standard markdown links, enable VS Code's built-in 'markdown.updateLinksOnFileMove.enabled' setting.",
           "type": "boolean",
           "default": true
         },
-        "foam.links.hover.enable": {
+        "pa-hub.links.hover.enable": {
           "description": "Enable displaying note content on hover links",
           "type": "boolean",
           "default": true
         },
-        "foam.dateLocale": {
+        "pa-hub.dateLocale": {
           "type": "string",
           "default": "default",
           "description": "The locale used for date variables such as FOAM_DATE_DAY_NAME and FOAM_DATE_MONTH_NAME. Use 'default' to use the system locale, or a BCP 47 language tag (e.g. 'en-US', 'ja-JP')."
         },
-        "foam.openDailyNote.onStartup": {
+        "pa-hub.openDailyNote.onStartup": {
           "type": "boolean",
           "default": false
         },
-        "foam.openDailyNote.fileExtension": {
+        "pa-hub.openDailyNote.fileExtension": {
           "deprecationMessage": "This setting is deprecated and will be removed in future versions. Please use the daily-note template: https://github.com/foambubble/foam/blob/fe0228bdcc647e85682670656b5f09203b1c2518/docs/user/features/daily-notes.md",
           "type": "string",
           "default": "md"
         },
-        "foam.openDailyNote.filenameFormat": {
+        "pa-hub.openDailyNote.filenameFormat": {
           "deprecationMessage": "This setting is deprecated and will be removed in future versions. Please use the daily-note template: https://github.com/foambubble/foam/blob/fe0228bdcc647e85682670656b5f09203b1c2518/docs/user/features/daily-notes.md",
           "type": "string",
           "default": "isoDate",
           "markdownDescription": "Specifies how the daily note filename is formatted. See the [dateformat docs](https://www.npmjs.com/package/dateformat) for valid formats"
         },
-        "foam.openDailyNote.titleFormat": {
+        "pa-hub.openDailyNote.titleFormat": {
           "deprecationMessage": "This setting is deprecated and will be removed in future versions. Please use the daily-note template: https://github.com/foambubble/foam/blob/fe0228bdcc647e85682670656b5f09203b1c2518/docs/user/features/daily-notes.md",
           "type": [
             "string",
@@ -899,7 +1037,7 @@
           "default": null,
           "markdownDescription": "Specifies how the daily note title is formatted. Will default to the filename format if set to null. See the [dateformat docs](https://www.npmjs.com/package/dateformat) for valid formats"
         },
-        "foam.openDailyNote.directory": {
+        "pa-hub.openDailyNote.directory": {
           "deprecationMessage": "This setting is deprecated and will be removed in future versions. Please use the daily-note template: https://github.com/foambubble/foam/blob/fe0228bdcc647e85682670656b5f09203b1c2518/docs/user/features/daily-notes.md",
           "type": [
             "string",
@@ -908,21 +1046,21 @@
           "default": null,
           "description": "The directory into which daily notes should be created. Defaults to the workspace root."
         },
-        "foam.orphans.exclude": {
+        "pa-hub.orphans.exclude": {
           "type": [
             "array"
           ],
           "default": [],
           "markdownDescription": "Specifies the list of glob patterns that will be excluded from the orphans report. To ignore the all the content of a given folder, use `**<folderName>/**/*`"
         },
-        "foam.placeholders.exclude": {
+        "pa-hub.placeholders.exclude": {
           "type": [
             "array"
           ],
           "default": [],
           "markdownDescription": "Specifies the list of glob patterns that will be excluded from the placeholders report. To ignore the all the content of a given folder, use `**<folderName>/**/*`"
         },
-        "foam.dateSnippets.afterCompletion": {
+        "pa-hub.dateSnippets.afterCompletion": {
           "type": "string",
           "default": "createNote",
           "enum": [
@@ -937,7 +1075,7 @@
           ],
           "description": "Whether or not to navigate to the target daily note when a daily note snippet is selected."
         },
-        "foam.preview.embedNoteType": {
+        "pa-hub.preview.embedNoteType": {
           "type": "string",
           "default": "full-card",
           "enum": [
@@ -953,17 +1091,17 @@
             "Include the section without title and style it within a container"
           ]
         },
-        "foam.graph.titleMaxLength": {
+        "pa-hub.graph.titleMaxLength": {
           "type": "number",
           "default": 24,
           "description": "The maximum title length before being abbreviated. Set to 0 or less to disable."
         },
-        "foam.graph.style": {
+        "pa-hub.graph.style": {
           "type": "object",
           "description": "Custom graph styling settings. An example is present in the documentation.",
           "default": {}
         },
-        "foam.graph.views": {
+        "pa-hub.graph.views": {
           "type": "array",
           "default": [],
           "description": "Named graph views. A view named \"Default\" is applied automatically when the graph opens with no arguments. Other views can be opened via keybindings by passing { \"view\": \"<name>\" } as command args.",
@@ -1009,28 +1147,45 @@
             }
           }
         },
-        "foam.graph.onStartup": {
+        "pa-hub.graph.onStartup": {
           "type": "boolean",
           "default": false,
           "description": "Whether to open the graph on startup."
         },
-        "foam.graph.navigateToPreview": {
+        "pa-hub.graph.navigateToPreview": {
           "type": "boolean",
           "default": false,
           "description": "When clicking a node in the graph, open the markdown preview instead of the source editor."
+        },
+        "pa-hub.privacy.excludeGlobs": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "description": "Glob patterns (relative to a vault root, ** and * supported) whose files PA Hub never indexes or renders; knowledge/me/profile.md is always excluded regardless of this setting."
         }
       }
     },
     "keybindings": [
       {
-        "command": "foam-vscode.open-daily-note",
+        "command": "pa-hub.open-daily-note",
         "key": "alt+d"
       },
       {
-        "command": "foam-vscode.open-daily-note-for-date",
+        "command": "pa-hub.open-daily-note-for-date",
         "key": "alt+h"
       }
-    ]
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "pa-hub",
+          "title": "PA Hub",
+          "icon": "assets/pa-hub.svg"
+        }
+      ]
+    }
   },
   "scripts": {
     "build:node": "node esbuild.js --platform=node",
@@ -1051,12 +1206,12 @@
     "clean": "rimraf out",
     "watch": "nodemon --watch 'src/**/*.ts' --watch '../foam-core/src/**/*.ts' --watch '../foam-graph/src/**/*.ts' --exec 'yarn build' --ext ts",
     "tag-release": "node ../../scripts/tag-release.js vscode",
-    "package": "npx @vscode/vsce@3.6.0 package --yarn",
-    "publish:vscode": "npx vsce publish --packagePath foam-vscode-$npm_package_version.vsix",
+    "package": "npx @vscode/vsce@3.6.0 package --yarn --out artifacts/pa-hub/pa-hub.vsix",
+    "publish:vscode": "npx vsce publish --packagePath artifacts/pa-hub/pa-hub.vsix",
     "publish:openvsx": "npx ovsx publish foam-vscode-$npm_package_version.vsix -p $OPENVSX_TOKEN",
     "release": "node release.js",
     "open-in-browser": "vscode-test-web --quality=stable --browser=chromium --extensionDevelopmentPath=. ",
-    "install-extension": "code --install-extension ./foam-vscode-$npm_package_version.vsix",
+    "install-extension": "code --install-extension ./artifacts/pa-hub/pa-hub.vsix",
     "vscode:start-debugging": "yarn clean && yarn watch"
   },
   "devDependencies": {
@@ -1069,6 +1224,7 @@
     "@types/picomatch": "^2.2.1",
     "@types/remove-markdown": "^0.3.4",
     "@types/vscode": "^1.110.0",
+    "@vscode/test-electron": "^2.4.1",
     "@vscode/test-web": "^0.0.80",
     "cross-env": "^10.1.0",
     "esbuild": "^0.28.1",
@@ -1105,11 +1261,5 @@
     "unified": "^9.0.0",
     "unist-util-visit": "^2.0.2",
     "yaml": "^2.2.2"
-  },
-  "__metadata": {
-    "id": "b85c6625-454b-4b61-8a22-c42f3d0f2e1e",
-    "publisherDisplayName": "Foam",
-    "publisherId": "34339645-24f0-4619-9917-12157fd92446",
-    "isPreReleaseVersion": false
   }
 }

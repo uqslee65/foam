@@ -1,5 +1,6 @@
 import './foam-graph';
-import type { ExtensionMessage, WebviewMessage } from './protocol';
+import { applyExtensionMessage } from './foam-graph';
+import { PA_HUB_PROTOCOL_VERSION, type WebviewMessage } from './protocol';
 import type { FoamGraph } from './foam-graph';
 
 declare function acquireVsCodeApi(): {
@@ -22,18 +23,8 @@ element.showControls = true;
 document.getElementById('app')!.appendChild(element);
 
 window.addEventListener('message', (event: MessageEvent) => {
-  const message = event.data as ExtensionMessage;
-  switch (message.type) {
-    case 'didUpdateGraphData':
-      element.graphData = message.payload;
-      break;
-    case 'didUpdateStyle':
-      element.graphStyle = message.payload;
-      break;
-    case 'didSelectNote':
-      element.selectNote(message.payload);
-      break;
-  }
+  const reply = applyExtensionMessage(element, event.data);
+  if (reply) vscode.postMessage(reply);
 });
 
 element.addEventListener('node-click', (e: Event) => {
@@ -57,3 +48,7 @@ window.addEventListener('error', (error: ErrorEvent) => {
 });
 
 vscode.postMessage({ type: 'webviewDidLoad' });
+vscode.postMessage({
+  type: 'webviewDidBecomeReady',
+  payload: { protocolVersion: PA_HUB_PROTOCOL_VERSION },
+});

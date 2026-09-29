@@ -87,7 +87,7 @@ describe('VsCodeFoamConfig — files exclude', () => {
     // `files.watcherExclude` means "don't spend CPU watching this", not "this
     // is not part of my workspace" — VS Code applies it to recursive watchers
     // itself, so honouring it here only shrank the initial scan and silently
-    // dropped those notes from the index. Use `foam.files.exclude` to keep a
+    // dropped those notes from the index. Use `pa-hub.files.exclude` to keep a
     // folder out of Foam.
     await withModifiedConfiguration(
       'files.watcherExclude',
@@ -99,7 +99,7 @@ describe('VsCodeFoamConfig — files exclude', () => {
   });
 
   it('always excludes VCS and OS internals, whatever the user configures', async () => {
-    // `foam.files.exclude` is an array setting, so a user value replaces the
+    // `pa-hub.files.exclude` is an array setting, so a user value replaces the
     // default wholesale rather than adding to it. These patterns can never be
     // knowledge base content, so they are not left to configuration.
     await withModifiedFoamConfiguration(
@@ -129,7 +129,7 @@ describe('VsCodeFoamConfig — files exclude', () => {
     );
   });
 
-  it('excludes foam.files.exclude patterns', async () => {
+  it('excludes pa-hub.files.exclude patterns', async () => {
     await withModifiedFoamConfiguration(
       'files.exclude',
       ['**/archive/**'],

@@ -1,0 +1,132 @@
+<task>
+Task slug: lazarus-foam-vscode-ext
+Plan ref: N10
+Shard: provider-conversion (012b, sub-shard 2/3 of N10 graph_view)
+Depends: N09 (CLOSED — graph renderer), 012a (CLOSED — webview-security)
+
+Action: Convert the graph from a WebviewPanel to a WebviewViewProvider, wire CSP/nonce via webview-security, remove telemetry. Keep existing buildGraphData and uri.path IDs unchanged (NodeId wiring is a separate shard).
+
+Done when: WebviewViewProvider registered for pa-hub.graph, CSP nonced via webview-security, telemetry removed, all test cases pass, tsc --noEmit clean.
+
+Worker model: gpt-5.6-luna
+Worker effort: xhigh
+</task>
+
+<plan_first>
+Before editing anything, output a numbered plan of exactly which changes you will make in which file, then execute the plan in the same turn.
+</plan_first>
+
+<exact_io_contract>
+This section is a specification, not a suggestion. Implement it literally.
+Repo root: /Users/slee65/projects/lazarus-foam-ext
+
+Owns (exactly these 2 files — modify first, create second, touch nothing else):
+1. packages/foam-vscode/src/vscode/features/graph-webview/index.ts (MODIFY, currently 327 lines, md5 02a9e37cc0c8307ecce2c865bbe9d599)
+2. packages/foam-vscode/src/pa-hub/tests/test_graph_view.test.ts (NEW)
+
+=== index.ts CHANGES (provider conversion) ===
+
+REMOVE these imports/references:
+- `import { getTelemetry } from '../../services/telemetry';` (line 9)
+- Every `getTelemetry()?.trackCommand(...)` call
+- The `registerWebviewPanelSerializer('pa-hub.graph', ...)` block (lines 50-62)
+- The `createGraphPanel` function (lines 117-135)
+- The entire old `getWebviewContent` function (lines 194-224) — replaced by fillGraphHtml
+
+ADD these imports:
+- `import { generateNonce, buildCsp, fillGraphHtml } from '../../../pa-hub/webview-security';`
+
+CONVERT activate function:
+- Remove `let panel: vscode.WebviewPanel | undefined = undefined;`
+- Create a class or closure-based WebviewViewProvider that implements vscode.WebviewViewProvider
+- Register it: `vscode.window.registerWebviewViewProvider('pa-hub.graph', provider, { webviewOptions: { retainContextWhenHidden: true } })`
+- The provider's resolveWebviewView method:
+  1. Set `webviewView.webview.options = { enableScripts: true, localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'static', 'dataviz')] }` BEFORE setting html
+  2. Generate nonce: `const nonce = generateNonce()`
+  3. Build CSP: `const csp = buildCsp({ cspSource: webviewView.webview.cspSource, nonce })`
+  4. Read template: `vscode.workspace.fs.readFile(vscode.Uri.joinPath(context.extensionUri, 'static', 'dataviz', 'index.html'))`
+  5. Fill template: `fillGraphHtml(template, { csp, nonce, resolveAsset: f => webviewView.webview.asWebviewUri(vscode.Uri.joinPath(datavizUri, f)).toString() })`
+  6. Set `webviewView.webview.html = filled`
+  7. Wire message handler (same switch/case as current but on webviewView.webview)
+  8. Wire foam graph.onDidUpdate and active-tab listeners, dispose them on webview dispose
+
+CHANGE pa-hub.show-graph command:
+- Replace the body with: `vscode.commands.executeCommand('pa-hub.graph.focus')`
+- Remove the `shouldOpenGraphOnStartup` block (graph.onStartup config)
+
+KEEP these functions unchanged:
+- getGraphStyle, viewConfigToStyle, mergeStyles, resolveViewStyle, getNodeNavigationCommand
+- cutTitle (keep reading vscode config — parameterization is 012c scope)
+- handleActiveResourceChange (keep sending note.uri.path — NodeId wiring is 012c scope)
+- The webviewDidSelectNode handler keeps using vscode.Uri.parse(message.payload) — 012c scope
+
+The current generateGraphData function stays as-is (still calls buildGraphData with uri.path). 012c replaces it.
+
+KEEP the message handler switch cases:
+- webviewDidLoad: send didUpdateStyle + updateGraph (same as current)
+- webviewDidSelectNode: keep existing Uri.parse logic
+- error: keep Logger.error
+- Also handle webviewDidBecomeReady: no action needed but do not reject it (log or ignore)
+- Do NOT use parseWebviewMessage from protocol — raw switch is fine for this shard
+
+=== test_graph_view.test.ts ===
+
+All test names MUST be prefixed with test_graph_view_ (required for vitest -t filter).
+Uses vscode mock (vitest aliases vscode to src/test/vscode-mock.ts).
+The vscode mock does NOT provide WebviewView or registerWebviewViewProvider.
+Tests focus on the pure/exported functions and message handling logic.
+
+Required test cases (>= 10):
+1. test_graph_view_get_node_nav_md_preview — getNodeNavigationCommand('.../foo.md', true) === 'markdown.showPreview'
+2. test_graph_view_get_node_nav_md_no_preview — getNodeNavigationCommand('.../foo.md', false) === 'vscode.open'
+3. test_graph_view_get_node_nav_non_md — getNodeNavigationCommand('.../foo.txt', true) === 'vscode.open'
+4. test_graph_view_merge_styles_patch_wins — mergeStyles: patch colorMode overrides base
+5. test_graph_view_merge_styles_base_preserved — mergeStyles: unpatched showNodesOfType preserved
+6. test_graph_view_view_config_colors — viewConfigToStyle extracts node color entries
+7. test_graph_view_view_config_visibility — viewConfigToStyle maps enabled flags to showNodesOfType
+8. test_graph_view_view_config_empty — viewConfigToStyle on {} returns empty style
+9. test_graph_view_get_graph_style_reads_config — getGraphStyle returns { style: configValue }
+10. test_graph_view_cut_title_truncates — cutTitle truncates when title.length > config maxLen
+11. test_graph_view_cut_title_short_passthrough — cutTitle returns short title unchanged
+12. test_graph_view_resolve_view_no_args — resolveViewStyle() returns base style
+
+Import the exported functions from the graph-webview index:
+```typescript
+import { getGraphStyle, viewConfigToStyle, mergeStyles, resolveViewStyle, getNodeNavigationCommand, handleActiveResourceChange, cutTitle } from '../../vscode/features/graph-webview/index';
+```
+
+Note: cutTitle is currently NOT exported. The builder must add `export` to the cutTitle function declaration in index.ts.
+
+For tests that read vscode config (getGraphStyle, cutTitle, resolveViewStyle), set up the mock config before each test:
+```typescript
+import * as vscode from 'vscode';
+// vscode.workspace.getConfiguration returns a mock — set values via the mock API
+```
+Read packages/foam-vscode/src/test/vscode-mock.ts lines 2340-2380 to understand how getConfiguration is mocked before writing config-dependent tests.
+</exact_io_contract>
+
+<acceptance_checks>
+python3 /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N10b_1.py
+bash /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N10b_2.sh
+</acceptance_checks>
+
+<forbidden_actions>
+Do not edit any file outside the 2 owns paths listed above.
+Do not modify webview-security.ts, roots.ts, graph-data.ts, protocol.ts, main.ts, extension.ts, or any other file.
+Do not run yarn install, yarn build, yarn compile, or any network command.
+Do not run tsc WITHOUT --noEmit (do not generate build output in out/).
+Do not launch code-insiders.
+Do not replace buildGraphData with buildRootQualifiedGraphData — that is 012c scope.
+Do not change didSelectNote payload from note.uri.path — that is 012c scope.
+Do not change webviewDidSelectNode from Uri.parse — that is 012c scope.
+Do not use parseWebviewMessage from protocol.ts.
+</forbidden_actions>
+
+<gates_ledger>
+logs/pdca/gates/lazarus-foam-vscode-ext/GATES.md
+</gates_ledger>
+
+<compact_output_contract>
+Lead with DONE or BLOCKED, then files changed, then checks run.
+Do not add extra prose.
+</compact_output_contract>

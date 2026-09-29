@@ -7,7 +7,7 @@ import { collectNoteSet } from './note-set';
 import { slugForUri } from './slug';
 import { HtmlPageTarget } from './target/target';
 
-export const EXPORT_HTML_PAGE_COMMAND = 'foam-vscode.export-html-page';
+export const EXPORT_HTML_PAGE_COMMAND = 'pa-hub.export-html-page';
 const DEFAULT_DEPTH = 2;
 
 export default async function activate(

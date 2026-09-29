@@ -28,7 +28,7 @@ export function buildWatchGlob(extensions: string[]): string {
  * Builds the glob for the workspace file watcher.
  *
  * The attachment extensions come from the provider rather than from
- * `foam.files.attachmentExtensions`, because the provider also treats images
+ * `pa-hub.files.attachmentExtensions`, because the provider also treats images
  * as attachments regardless of that setting. Reading the setting directly left
  * images unwatched, so a pasted image only showed up after a window reload
  * (issue #1697).

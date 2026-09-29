@@ -28,7 +28,7 @@ export default async function activate(
     matcher
   );
 
-  const treeView = vscode.window.createTreeView('foam-vscode.orphans', {
+  const treeView = vscode.window.createTreeView('pa-hub.orphans', {
     treeDataProvider: provider,
     showCollapseAll: true,
   });
@@ -37,7 +37,7 @@ export default async function activate(
   treeView.title = baseTitle + ` (${provider.nValues})`;
 
   context.subscriptions.push(
-    vscode.window.registerTreeDataProvider('foam-vscode.orphans', provider),
+    vscode.window.registerTreeDataProvider('pa-hub.orphans', provider),
     provider,
     treeView,
     ...instrumentTreeView(treeView, 'orphans'),
@@ -50,7 +50,7 @@ export default async function activate(
 
 /** Retrieve the orphans configuration */
 export function getOrphansConfig(): GroupedResourcesConfig {
-  const orphansConfig = vscode.workspace.getConfiguration('foam.orphans');
+  const orphansConfig = vscode.workspace.getConfiguration('pa-hub.orphans');
   const exclude: string[] = orphansConfig.get('exclude') ?? [];
   return { exclude };
 }

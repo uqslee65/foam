@@ -128,7 +128,7 @@ async function offerToCreateTemplate(): Promise<void> {
       'No templates available. Would you like to create one instead?',
   });
   if (response === 'Yes') {
-    commands.executeCommand('foam-vscode.create-new-template');
+    commands.executeCommand('pa-hub.create-new-template');
     return;
   }
 }

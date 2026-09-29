@@ -9,7 +9,7 @@ import { fromVsCodeUri, toVsCodeRange } from '../../utils/vsc-utils';
 const placeholderDecoration = vscode.window.createTextEditorDecorationType({
   rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
   textDecoration: 'none',
-  color: { id: 'foam.placeholder' },
+  color: { id: 'paHub.placeholder' },
   cursor: 'pointer',
 });
 

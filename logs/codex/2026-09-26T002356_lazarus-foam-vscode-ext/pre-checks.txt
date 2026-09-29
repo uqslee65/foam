@@ -1,0 +1,24 @@
+# PRE-DISPATCH
+
+$ python3 /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N10c_1.py
+exit: 1
+--- stdout ---
+FAIL k_N10c_1 index.ts missing 'buildRootQualifiedGraphData' (root-qualified graph data builder)
+FAIL k_N10c_1 index.ts missing 'idToUri' (idToUri map stored on provider)
+FAIL k_N10c_1 index.ts missing 'graph-data' (graph-data import path)
+FAIL k_N10c_1 index.ts missing 'toVsCodeUri' (vscode URI conversion)
+FAIL k_N10c_1 index.ts still contains 'import { buildGraphData }' (old buildGraphData import)
+FAIL k_N10c_1 index.ts still contains 'resourceToId: uri => uri.path' (old raw-path resourceToId)
+FAIL k_N10c_1 index.ts still contains 'Uri.parse(message.payload)' (old Uri.parse for node selection)
+FAIL k_N10c_1 cutTitle not parameterized (no maxLen param)
+--- stderr ---
+
+
+$ bash /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N10c_2.sh
+exit: 0
+--- stdout ---
+JSON report written to /tmp/pa_hub_gate_n10c_vitest.json
+PASS k_N10c_2 vitest=13 tsc=0 oxlint=0 regressions=ok
+--- stderr ---
+
+

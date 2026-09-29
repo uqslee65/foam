@@ -40,8 +40,8 @@ interface SelectionInfo {
  * block every other `command:` link.
  */
 export const FOAM_TOOLTIP_TRUSTED_COMMANDS = [
-  'foam-vscode.open-resource',
-  'foam-vscode.create-note',
+  'pa-hub.open-resource',
+  'pa-hub.create-note',
 ];
 
 /**

@@ -1,0 +1,25 @@
+src/components/control-panel.ts(14,2): error TS1238: Unable to resolve signature of class decorator when called as an expression.
+src/components/control-panel.ts(316,31): error TS2416: Property 'style' in type 'ControlPanel' is not assignable to the same property in base type 'LitElement'.
+src/components/graph-canvas.test.ts(21,28): error TS2345: Argument of type 'GraphCanvas' is not assignable to parameter of type 'HTMLElement'.
+src/components/graph-canvas.test.ts(44,28): error TS2345: Argument of type 'GraphCanvas' is not assignable to parameter of type 'HTMLElement'.
+src/components/graph-canvas.ts(10,8): error TS7016: Could not find a declaration file for module 'd3-force'. '/Users/slee65/projects/lazarus-foam-ext/node_modules/d3-force/src/index.js' implicitly has an 'any' type.
+src/components/graph-canvas.ts(11,29): error TS7016: Could not find a declaration file for module 'd3-scale'. '/Users/slee65/projects/lazarus-foam-ext/node_modules/d3-scale/src/index.js' implicitly has an 'any' type.
+src/components/graph-canvas.ts(116,2): error TS1238: Unable to resolve signature of class decorator when called as an expression.
+src/components/graph-canvas.ts(137,31): error TS2416: Property 'style' in type 'GraphCanvas' is not assignable to the same property in base type 'LitElement'.
+src/components/graph-canvas.ts(176,48): error TS2344: Type 'typeof ForceGraph' does not satisfy the constraint '(...args: any) => any'.
+src/components/graph-canvas.ts(195,26): error TS2348: Value of type 'typeof ForceGraph' is not callable. Did you mean to include 'new'?
+src/components/graph-canvas.ts(219,37): error TS7006: Parameter 'link' implicitly has an 'any' type.
+src/components/graph-canvas.ts(455,43): error TS2345: Argument of type 'this' is not assignable to parameter of type 'HTMLElement'.
+src/components/graph-canvas.ts(472,52): error TS2345: Argument of type 'this' is not assignable to parameter of type 'HTMLElement'.
+src/lib/colors.test.ts(2,21): error TS7016: Could not find a declaration file for module 'd3-color'. '/Users/slee65/projects/lazarus-foam-ext/node_modules/d3-color/src/index.js' implicitly has an 'any' type.
+src/lib/colors.ts(1,26): error TS7016: Could not find a declaration file for module 'd3-color'. '/Users/slee65/projects/lazarus-foam-ext/node_modules/d3-color/src/index.js' implicitly has an 'any' type.
+src/lib/colors.ts(2,31): error TS7016: Could not find a declaration file for module 'd3-color'. '/Users/slee65/projects/lazarus-foam-ext/node_modules/d3-color/src/index.js' implicitly has an 'any' type.
+src/lib/painter.ts(1,31): error TS7016: Could not find a declaration file for module 'd3-color'. '/Users/slee65/projects/lazarus-foam-ext/node_modules/d3-color/src/index.js' implicitly has an 'any' type.
+src/lib/style.ts(34,5): error TS2322: Type '{ [x: string]: string | undefined; note: string; placeholder: string; tag: string; }' is not assignable to type '{ [key: string]: string; note: string; placeholder: string; tag: string; }'.
+src/pa-hub/test_graph_protocol.test.ts(115,18): error TS2339: Property 'value' does not exist on type 'ParseResult<ExtensionMessage>'.
+src/pa-hub/test_graph_protocol.test.ts(200,38): error TS2339: Property 'payload' does not exist on type 'WebviewMessage'.
+src/pa-hub/test_graph_protocol.test.ts(417,35): error TS2339: Property 'groups' does not exist on type 'string | GraphData | GraphStyle | FocusRequest | { visible: boolean; }'.
+src/pa-hub/test_graph_protocol.test.ts(420,35): error TS2339: Property 'groups' does not exist on type 'string | GraphData | GraphStyle | FocusRequest | { visible: boolean; }'.
+src/pa-hub/test_graph_protocol.test.ts(421,35): error TS2339: Property 'style' does not exist on type 'string | GraphData | GraphStyle | FocusRequest | { visible: boolean; }'.
+src/pa-hub/test_graph_protocol.test.ts(82,18): error TS2339: Property 'value' does not exist on type 'ParseResult<ExtensionMessage>'.
+src/test-utils.ts(5,86): error TS2322: Type '{ background: string; fontSize: number; fontFamily: string; lineColor: string; lineWidth: number; particleWidth: number; highlightedForeground: string; node: { note: string; placeholder: string; tag: string; [key: string]: string; }; colorMode: "none" | "directory" | "type"; groups?: GroupRule[] | undefined; }' is not assignable to type 'ResolvedStyle'.

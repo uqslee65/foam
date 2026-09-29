@@ -8,7 +8,7 @@ describe('open-daily-note-for-date command', () => {
       .spyOn(window, 'showQuickPick')
       .mockImplementationOnce(vi.fn(() => Promise.resolve(undefined)));
 
-    await commands.executeCommand('foam-vscode.open-daily-note-for-date');
+    await commands.executeCommand('pa-hub.open-daily-note-for-date');
 
     expect(spy).toHaveBeenCalledWith(
       expect.objectContaining([

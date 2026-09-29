@@ -1,7 +1,7 @@
 import { ExtensionContext, Uri, commands, window, workspace } from 'vscode';
 import { hash } from '@foam/core';
 
-export const WHATS_NEW_LAST_SEEN_KEY = 'foam.whatsNew.lastSeen';
+export const WHATS_NEW_LAST_SEEN_KEY = 'pa-hub.whatsNew.lastSeen';
 
 /**
  * Extracts the h1 heading text from WHATS_NEW.md content.
@@ -43,7 +43,7 @@ export async function showWhatsNew(extensionUri: Uri) {
 
 export default async function activate(context: ExtensionContext) {
   context.subscriptions.push(
-    commands.registerCommand('foam-vscode.show-whats-new', () =>
+    commands.registerCommand('pa-hub.show-whats-new', () =>
       showWhatsNew(context.extensionUri)
     )
   );

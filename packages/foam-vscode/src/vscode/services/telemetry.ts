@@ -134,7 +134,7 @@ export class TelemetryService implements IDisposable {
    * Free-text settings (paths, templates) are never included.
    */
   trackConfigSnapshot(): void {
-    const cfg = workspace.getConfiguration('foam');
+    const cfg = workspace.getConfiguration('pa-hub');
 
     const properties: Record<string, string> = {
       'graph.onStartup': String(cfg.get('graph.onStartup', false)),

@@ -1,0 +1,13 @@
+# CLAIM — Codex self-report. Evidence only, never verdict.
+DONE
+
+Files changed:
+
+- [index.ts](/Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/vscode/features/graph-webview/index.ts)
+- [test_graph_view.test.ts](/Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/pa-hub/tests/test_graph_view.test.ts)
+
+Checks:
+
+- `k_N12c_1.py`: PASS
+- `k_N12c_2.sh`: PASS — graph 17, focus 16, open-node 6, tsc 0, oxlint 0
+- `git diff --check`: PASS

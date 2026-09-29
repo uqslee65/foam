@@ -1,0 +1,127 @@
+<task>
+Task slug: lazarus-foam-vscode-ext
+Plan ref: N11
+Shard: open-node domain module (013a, sub-shard 1/2 of N11 open_node)
+Depends: N10 (graph_view CLOSED)
+
+Action: Create a pure domain module that validates a graph-node open request against the idToUri map, workspace presence, and privacy policy. Returns a discriminated union — never throws.
+
+Done when: resolveNodeOpen exported, returns discriminated union with all four deny reasons plus allowed, tsc clean, all tests pass.
+
+Worker model: gpt-5.6-luna
+Worker effort: xhigh
+</task>
+
+<plan_first>
+Before editing anything, output a numbered plan of exactly which changes you will make in which file, then execute the plan in the same turn.
+</plan_first>
+
+<exact_io_contract>
+This section is a specification, not a suggestion. Implement it literally.
+Repo root: /Users/slee65/projects/lazarus-foam-ext
+
+Owns (exactly these 2 files — create both, touch nothing else):
+1. packages/foam-vscode/src/pa-hub/open-node.ts (CREATE)
+2. packages/foam-vscode/src/pa-hub/tests/test_open_node.test.ts (CREATE)
+
+Read BEFORE implementing:
+- packages/foam-vscode/src/pa-hub/privacy.ts (PrivacyPolicy interface, DenyReason type, decide method)
+- packages/foam-vscode/src/pa-hub/roots.ts (NodeId type source, parseNodeId usage)
+- packages/foam-vscode/src/pa-hub/tests/test_privacy_policy.test.ts (temp-root pattern for tests)
+- packages/foam-graph/src/protocol.ts (isNodeId, NodeId type, parseNodeId)
+
+=== open-node.ts CONTRACT ===
+
+Pure domain module. NO vscode import. NO node:fs import. NO side effects.
+
+Imports:
+- isNodeId from '@foam/graph-view/protocol' (use same @ts-expect-error ESM pattern as roots.ts:3-4)
+- type NodeId from '@foam/graph-view/protocol' with { 'resolution-mode': 'import' }
+- type URI from '@foam/core'
+- type PrivacyPolicy, DenyReason from './privacy'
+
+Export a discriminated union result type:
+
+```typescript
+export type OpenNodeDeny =
+  | { allowed: false; reason: 'invalid_id' }
+  | { allowed: false; reason: 'unknown_id'; nodeId: NodeId }
+  | { allowed: false; reason: 'stale_mapping'; nodeId: NodeId; uri: URI }
+  | { allowed: false; reason: 'privacy_denied'; nodeId: NodeId; uri: URI; denyReason: DenyReason };
+
+export type OpenNodeAllow = { allowed: true; nodeId: NodeId; uri: URI };
+
+export type OpenNodeResult = OpenNodeAllow | OpenNodeDeny;
+```
+
+Export the main function:
+
+```typescript
+export function resolveNodeOpen(
+  payload: unknown,
+  idToUri: Map<NodeId, URI>,
+  policy: PrivacyPolicy,
+  isInWorkspace: (uri: URI) => boolean
+): OpenNodeResult
+```
+
+Validation order (EXACT, each check runs only if prior checks pass):
+1. `!isNodeId(payload)` => `{ allowed: false, reason: 'invalid_id' }`
+2. `idToUri.get(payload)` miss => `{ allowed: false, reason: 'unknown_id', nodeId: payload }`
+3. `!isInWorkspace(uri)` => `{ allowed: false, reason: 'stale_mapping', nodeId: payload, uri }`
+4. `uri.scheme !== 'file'` OR `!policy.decide(uri.toFsPath()).allowed` => privacy_denied with the inner DenyReason from the decision (for non-file scheme use 'outside_roots' as denyReason)
+5. else `{ allowed: true, nodeId: payload, uri }`
+
+Step 4 calls policy.decide() fresh every time — never cache.
+
+=== test_open_node.test.ts CONTRACT ===
+
+All test names prefixed `test_open_node_`. Use vitest (describe/it/expect).
+Use createPrivacyPolicy from '../privacy' with fs.mkdtempSync temp roots (same pattern as test_privacy_policy.test.ts). Never touch real HOME or real profile.md.
+
+Required tests (minimum 6, add more if useful):
+1. test_open_node_invalid_id — non-string, empty string, "not:a:valid:id", number => invalid_id
+2. test_open_node_unknown_id — valid NodeId format but not in map => unknown_id
+3. test_open_node_stale_mapping — in map but isInWorkspace returns false => stale_mapping
+4. test_open_node_privacy_denied_mandatory — in map, in workspace, but URI points to mandatory exclusion (knowledge/me/profile.md sentinel) => privacy_denied with denyReason='mandatory_exclusion'
+5. test_open_node_privacy_denied_nonfile — in map, in workspace, but URI has scheme='placeholder' => privacy_denied with denyReason='outside_roots'
+6. test_open_node_allowed — in map, in workspace, passes privacy => allowed with correct uri
+
+For fixtures:
+- Create temp dir with fs.mkdtempSync
+- Write a sentinel file `knowledge/me/profile.md` in the temp root (this is the mandatory exclusion)
+- Write a normal allowed file (e.g. `notes/hello.md`)
+- Create policy with createPrivacyPolicy({ roots: [tempRoot], excludeGlobs: [] })
+- Build idToUri map manually with makeNodeId from roots.ts or protocol
+- isInWorkspace callback: simple Set lookup or always-true/always-false lambdas
+
+Cleanup: afterAll or afterEach removes temp dir.
+
+Do NOT test privacy internals (inode, lookalike, glob matching) — already covered by test_privacy_policy.
+Do NOT import vscode anywhere in the test file.
+</exact_io_contract>
+
+<acceptance_checks>
+python3 /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N11a_1.py
+bash /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N11a_2.sh
+</acceptance_checks>
+
+<forbidden_actions>
+Do not edit any file outside the 2 owns paths listed above.
+Do not modify privacy.ts, privacy-index.ts, roots.ts, graph-data.ts, protocol.ts, index.ts, extension.ts.
+Do not run yarn install, yarn build, yarn compile, or any network command.
+Do not run tsc WITHOUT --noEmit.
+Do not launch code-insiders.
+Do not import vscode in open-node.ts.
+Do not add new dependencies.
+Do not cache policy decisions.
+</forbidden_actions>
+
+<gates_ledger>
+logs/pdca/gates/lazarus-foam-vscode-ext/GATES.md
+</gates_ledger>
+
+<compact_output_contract>
+Lead with DONE or BLOCKED, then files changed, then checks run.
+Do not add extra prose.
+</compact_output_contract>

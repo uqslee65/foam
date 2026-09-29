@@ -29,7 +29,7 @@ export default async function activate(
 ) {
   const foam = await foamPromise;
   const provider = new TagsProvider(foam.tags, foam.workspace);
-  const treeView = vscode.window.createTreeView('foam-vscode.tags-explorer', {
+  const treeView = vscode.window.createTreeView('pa-hub.tags-explorer', {
     treeDataProvider: provider,
     showCollapseAll: true,
   });
@@ -49,7 +49,7 @@ export default async function activate(
       }
     }),
     vscode.commands.registerCommand(
-      `foam-vscode.views.${provider.providerId}.expand-all`,
+      `pa-hub.views.${provider.providerId}.expand-all`,
       () =>
         expandAll(
           treeView,
@@ -58,7 +58,7 @@ export default async function activate(
         )
     ),
     vscode.commands.registerCommand(
-      `foam-vscode.views.${provider.providerId}.focus`,
+      `pa-hub.views.${provider.providerId}.focus`,
       async (tag?: string, source?: object) => {
         if (tag == null) {
           tag = await vscode.window.showQuickPick(
@@ -109,12 +109,12 @@ export class TagsProvider extends FolderTreeProvider<TagTreeItem, string> {
   public providerId = 'tags-explorer';
   public show = new ContextMemento<'all' | 'for-current-file'>(
     new MapBasedMemento(),
-    `foam-vscode.views.${this.providerId}.show`,
+    `pa-hub.views.${this.providerId}.show`,
     'all'
   );
   public groupBy = new ContextMemento<'off' | 'folder'>(
     new MapBasedMemento(),
-    `foam-vscode.views.${this.providerId}.group-by`,
+    `pa-hub.views.${this.providerId}.group-by`,
     'folder'
   );
 
@@ -131,28 +131,28 @@ export class TagsProvider extends FolderTreeProvider<TagTreeItem, string> {
     }
     this.disposables.push(
       vscode.commands.registerCommand(
-        `foam-vscode.views.${this.providerId}.show:all`,
+        `pa-hub.views.${this.providerId}.show:all`,
         () => {
           this.show.update('all');
           this.refresh();
         }
       ),
       vscode.commands.registerCommand(
-        `foam-vscode.views.${this.providerId}.show:for-current-file`,
+        `pa-hub.views.${this.providerId}.show:for-current-file`,
         () => {
           this.show.update('for-current-file');
           this.refresh();
         }
       ),
       vscode.commands.registerCommand(
-        `foam-vscode.views.${this.providerId}.group-by:folder`,
+        `pa-hub.views.${this.providerId}.group-by:folder`,
         () => {
           this.groupBy.update('folder');
           this.refresh();
         }
       ),
       vscode.commands.registerCommand(
-        `foam-vscode.views.${this.providerId}.group-by:off`,
+        `pa-hub.views.${this.providerId}.group-by:off`,
         () => {
           this.groupBy.update('off');
           this.refresh();

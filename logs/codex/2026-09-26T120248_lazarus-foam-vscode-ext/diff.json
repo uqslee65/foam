@@ -1,0 +1,8 @@
+{
+  "added": [],
+  "removed": [],
+  "modified": [
+    "/Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/pa-hub/focus.ts",
+    "/Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/pa-hub/tests/test_focus.test.ts"
+  ]
+}

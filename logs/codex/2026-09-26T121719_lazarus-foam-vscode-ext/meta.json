@@ -1,0 +1,54 @@
+{
+  "timestamp": "2026-09-26T121719",
+  "slug": "lazarus-foam-vscode-ext",
+  "model": "gpt-5.6-luna",
+  "route_class": "deterministic",
+  "model_override_reason": null,
+  "fallback_reason": null,
+  "codex_home": "/Users/slee65/.codex",
+  "checks": [
+    "python3 /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N12c_1.py",
+    "bash /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N12c_2.sh"
+  ],
+  "owns": [
+    "packages/foam-vscode/src/vscode/features/graph-webview/index.ts",
+    "packages/foam-vscode/src/pa-hub/tests/test_graph_view.test.ts"
+  ],
+  "effort": "xhigh",
+  "verbosity": "low",
+  "profile": "lazarus",
+  "role": "worker",
+  "plan_ref": "N12",
+  "parent_slug": null,
+  "seq": null,
+  "packet_bytes": 6798,
+  "max_packet_bytes": 24000,
+  "large_packet_allowed": false,
+  "allow_large_packet_reason": null,
+  "ambient_allow": [
+    "logs/host/",
+    "logs/standup-events/",
+    "personal_assistant/autosort/",
+    "graphify-out/",
+    "packages/foam-vscode/out/"
+  ],
+  "no_acceptance_reason": null,
+  "acceptance_tests_source": null,
+  "no_gates_reason": "N12 co-plan from prior session",
+  "gates_status": "waived",
+  "packet": "/private/tmp/claude-501/-Users-slee65-projects/b13e7000-3cd3-4693-a841-2e852457105c/scratchpad/N12c_packet.md",
+  "cwd": "/Users/slee65/projects/lazarus-foam-ext",
+  "tool_version": "1.1.0",
+  "lint_skipped": false,
+  "no_lint_reason": null,
+  "coplan_skipped": true,
+  "skip_coplan_reason": "N12 co-plan completed in prior session context",
+  "gates": null,
+  "snapshot": {
+    "max_hash_bytes": 67108864,
+    "max_content_bytes": 8388608,
+    "max_tree_hash_bytes": 2147483648,
+    "scope_skip": [],
+    "hash_chunk_bytes": 1048576
+  }
+}

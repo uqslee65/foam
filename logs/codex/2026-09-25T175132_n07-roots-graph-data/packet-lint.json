@@ -1,0 +1,58 @@
+{
+  "packet": "/private/tmp/claude-501/-Users-slee65-projects/b13e7000-3cd3-4693-a841-2e852457105c/scratchpad/N07_packet.md",
+  "class": "B",
+  "write_capable": true,
+  "errors": 7,
+  "warnings": 0,
+  "findings": [
+    {
+      "check": "missing-mandatory",
+      "severity": "error",
+      "tag": "task",
+      "line": null,
+      "message": "<task> is required but not present"
+    },
+    {
+      "check": "missing-mandatory",
+      "severity": "error",
+      "tag": "compact_output_contract",
+      "line": null,
+      "message": "<compact_output_contract> is required but not present"
+    },
+    {
+      "check": "missing-mandatory",
+      "severity": "error",
+      "tag": "acceptance_checks",
+      "line": null,
+      "message": "<acceptance_checks> is required but not present"
+    },
+    {
+      "check": "missing-mandatory",
+      "severity": "error",
+      "tag": "plan_first",
+      "line": null,
+      "message": "<plan_first> is required but not present"
+    },
+    {
+      "check": "missing-mandatory",
+      "severity": "error",
+      "tag": "gates_ledger",
+      "line": null,
+      "message": "<gates_ledger> is required but not present"
+    },
+    {
+      "check": "missing-mandatory",
+      "severity": "error",
+      "tag": "exact_io_contract",
+      "line": null,
+      "message": "<exact_io_contract> is required but not present"
+    },
+    {
+      "check": "missing-mandatory",
+      "severity": "error",
+      "tag": "forbidden_actions",
+      "line": null,
+      "message": "<forbidden_actions> is required but not present"
+    }
+  ]
+}

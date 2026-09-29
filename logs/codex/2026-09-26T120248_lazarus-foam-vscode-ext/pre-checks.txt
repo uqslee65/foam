@@ -1,0 +1,21 @@
+# PRE-DISPATCH
+
+$ python3 /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N12b_1.py
+exit: 1
+--- stdout ---
+FAIL k_N12b_1 focus.ts missing 'watchFocusFile'
+FAIL k_N12b_1 focus.ts missing 'FocusFs'
+FAIL k_N12b_1 focus.ts missing 'onRequest'
+FAIL k_N12b_1 focus.ts missing watcher concept (fs.watch or watcher)
+--- stderr ---
+
+
+$ bash /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N12b_2.sh
+exit: 0
+--- stdout ---
+JSON report written to /tmp/pa_hub_gate_n12b_focus_vitest.json
+focus: pass=12 fail=0
+PASS k_N12b_2 focus=12 tsc=0 oxlint=0 regressions=ok
+--- stderr ---
+
+

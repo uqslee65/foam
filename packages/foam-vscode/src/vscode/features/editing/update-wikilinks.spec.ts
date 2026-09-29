@@ -42,7 +42,7 @@ describe('Update wikilink definitions', () => {
       'withoutExtensions',
       async () => {
         await vscode.commands.executeCommand(
-          'foam-vscode.update-wikilink-definitions'
+          'pa-hub.update-wikilink-definitions'
         );
       }
     );

@@ -1,0 +1,11 @@
+# CLAIM — Codex self-report. Evidence only, never verdict.
+DONE
+
+Files changed:
+- `packages/foam-vscode/src/vscode/features/graph-webview/index.ts`
+- `packages/foam-vscode/src/pa-hub/tests/test_graph_view.test.ts`
+
+Checks:
+- `k_N10b_1.py` PASS
+- `k_N10b_2.sh` PASS — 13 tests, tsc clean, oxlint clean, regressions clear
+- `git diff --check` PASS

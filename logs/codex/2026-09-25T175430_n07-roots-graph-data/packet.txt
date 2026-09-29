@@ -1,0 +1,127 @@
+<task>
+Task slug: n07-roots-graph-data
+Plan ref: N07
+Shard: roots-graph-data (domain layer)
+Depends: N06 (CLOSED), N08 protocol (LANDED)
+Blocks: N10 (graph_view wiring)
+
+Action: Create roots.ts (workspace root classifier), graph-data.ts (root-qualified graph data builder), and roots.test.ts (14 unit tests). All three files are NEW — they do not exist yet.
+
+Done when: All 14 test cases pass AND tsc --noEmit clean AND no file: or absolute path in serialized GraphData.
+
+Worker model: gpt-5.6-luna
+Worker effort: xhigh
+</task>
+
+<plan_first>
+Before editing anything, output a numbered plan of exactly which functions you will write in which file, then execute the plan in the same turn.
+</plan_first>
+
+<exact_io_contract>
+This section is a specification, not a suggestion. Implement it literally.
+Repo root: /Users/slee65/projects/lazarus-foam-ext
+
+Owns (exactly these 3 files — create all 3, touch nothing else):
+1. packages/foam-vscode/src/pa-hub/roots.ts (NEW)
+2. packages/foam-vscode/src/pa-hub/graph-data.ts (NEW)
+3. packages/foam-vscode/src/pa-hub/roots.test.ts (NEW)
+
+=== roots.ts ===
+
+Import paths (use these exactly):
+  import type { URI } from '@foam/core';
+  import { RootKind, RootGroup, makeNodeId, isValidNodePath, type NodeId } from '@foam/graph-view/protocol';
+  import { relativeTo, isWithinPath } from '@foam/core';
+
+Exports:
+
+  interface ClassifiedRoot { uri: URI; kind: RootKind; }
+  interface RootClassification { roots: ClassifiedRoot[]; rootGroups: RootGroup[]; }
+
+  classifyRoots(workspaceRoots: URI[], classification?: Map<URI, RootKind>): RootClassification
+    - If classification provided, use it. Otherwise: first folder = 'vault', rest = 'sources'.
+    - rootGroups: vault = { root: 'vault', label: 'Vault', color: '#4a9eff' }
+                  sources = { root: 'sources', label: 'Sources', color: '#ff9f43' }
+    - Pure function, no vscode import.
+
+  resolveRoot(uri: URI, classifiedRoots: ClassifiedRoot[]): ClassifiedRoot | undefined
+    - First ClassifiedRoot where isWithinPath(uri, root.uri) is true.
+    - Order matters (first match wins).
+
+  makeResourceNodeId(uri: URI, classifiedRoots: ClassifiedRoot[]): NodeId | undefined
+    - Call resolveRoot. If no root, return undefined.
+    - relativePath = relativeTo(uri.path, root.uri.path)
+    - Validate with isValidNodePath(relativePath). If invalid, return undefined.
+    - Return makeNodeId(root.kind, relativePath).
+
+=== graph-data.ts ===
+
+Import paths (use these exactly):
+  import type { URI } from '@foam/core';
+  import type { Resource, Connection } from '@foam/core';
+  import { buildGraphData } from '@foam/core';
+  import type { GraphData, NodeId, RootGroup } from '@foam/graph-view/protocol';
+  import { classifyRoots, makeResourceNodeId } from './roots';
+
+Exports:
+
+  buildRootQualifiedGraphData(resources: Resource[], connections: Connection[], workspaceRoots: URI[]): { graphData: GraphData; idToUri: Map<NodeId, URI> }
+    - Call classifyRoots(workspaceRoots).
+    - Call buildGraphData(resources, connections, { resourceToId: uri => makeResourceNodeId(uri, classification.roots), includePlaceholders: false }).
+    - Build idToUri map by iterating resources, calling makeResourceNodeId for each.
+    - Return { graphData: { ...builtGraphData, rootGroups: classification.rootGroups }, idToUri }.
+
+Key: includePlaceholders: false (behaviour change vs current graph-webview which uses true).
+Key: resourceToId returns undefined for resources outside roots — excluded.
+Key: never pass invalid paths to makeNodeId (pre-validates with isValidNodePath).
+No vscode import.
+
+=== roots.test.ts ===
+
+All test names MUST be prefixed with test_roots_ or test_graph_data_ (required for vitest -t filter).
+Use @foam/core URI constructor to build test URIs. Do NOT use vscode or temp dirs. Build Resource[] and Connection[] directly.
+
+Required 14 test cases:
+1. test_roots_single_root_is_vault
+2. test_roots_two_roots_first_vault_rest_sources
+3. test_roots_resolveRoot_matches_first
+4. test_roots_resolveRoot_no_match
+5. test_roots_makeResourceNodeId_valid — returns vault:notes/foo.md
+6. test_roots_makeResourceNodeId_outside_roots — returns undefined, no throw
+7. test_roots_makeResourceNodeId_invalid_path — invalid path -> undefined, no throw, no RangeError
+8. test_graph_data_no_absolute_paths — JSON.stringify(graphData) has no file: substring
+9. test_graph_data_no_file_uri — explicit file:// check
+10. test_graph_data_two_roots_correct_ids — vault: and sources: prefixes
+11. test_graph_data_resource_outside_roots_excluded — not in nodeInfo
+12. test_graph_data_rootGroups_present — rootGroups has vault and sources
+13. test_graph_data_idToUri_mapping — maps NodeId back to URI
+14. test_graph_data_placeholders_excluded — no placeholder nodes when connections ref non-existent targets
+
+@foam/graph-view/protocol subpath has runtime JS at packages/foam-graph/out/protocol.js (NOT type-only).
+
+GraphNodeData shape (from @foam/core graph-data-builder): { id, type, title, properties, tags } — no URI field.
+matchesGroup for property: 'path' tests node.id — vault:relPath IDs align with deriveRootGroupRules.
+</exact_io_contract>
+
+<acceptance_checks>
+python3 /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N07_1.py
+bash /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N07_2.sh
+</acceptance_checks>
+
+<forbidden_actions>
+Do not edit any file outside the 3 owns paths listed above.
+Do not modify packages/foam-vscode/src/vscode/features/graph-webview/index.ts (N10 does that).
+Do not write .agent/current-plan.md or any file outside owns.
+Do not run yarn install or any network command.
+Do not launch code-insiders.
+</forbidden_actions>
+
+<gates_ledger>
+Parent cycle gates: logs/pdca/gates/lazarus-foam-vscode-ext/GATES.md
+This shard's checks: k_N07_1.py (static), k_N07_2.sh (regression + vitest)
+</gates_ledger>
+
+<compact_output_contract>
+Lead with DONE or BLOCKED, then files changed, then checks run.
+Do not add extra prose.
+</compact_output_contract>

@@ -176,8 +176,12 @@ export class GraphCanvas extends LitElement {
   private graphInstance: ReturnType<ReturnType<typeof ForceGraph>> | null =
     null;
   private firstGraphLoad = true;
+  private visibleState = true;
   private resizeObserver: ResizeObserver | null = null;
-  private readonly onResize = () => this.resizeGraphToViewport();
+  private readonly onResize = () => {
+    if (!this.visibleState) return;
+    this.resizeGraphToViewport();
+  };
 
   render() {
     return html`<div id="canvas-container"></div>`;
@@ -328,9 +332,10 @@ export class GraphCanvas extends LitElement {
 
     this.resizeGraphToViewport();
     if ('ResizeObserver' in window) {
-      this.resizeObserver = new ResizeObserver(() =>
-        this.resizeGraphToViewport()
-      );
+      this.resizeObserver = new ResizeObserver(() => {
+        if (!this.visibleState) return;
+        this.resizeGraphToViewport();
+      });
       this.resizeObserver.observe(this);
     }
     window.addEventListener('resize', this.onResize);
@@ -422,6 +427,17 @@ export class GraphCanvas extends LitElement {
         });
       }
     }
+  }
+
+  setVisible(visible: boolean): void {
+    this.visibleState = visible;
+    if (!this.graphInstance) return;
+    if (!visible) {
+      this.graphInstance.pauseAnimation();
+      return;
+    }
+    this.graphInstance.resumeAnimation();
+    this.resizeGraphToViewport();
   }
 
   /** Centers the viewport on a currently visible node. */

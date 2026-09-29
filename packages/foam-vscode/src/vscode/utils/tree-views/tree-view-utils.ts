@@ -45,7 +45,7 @@ export class UriTreeItem extends BaseTreeItem {
 
 export class ResourceTreeItem extends UriTreeItem {
   iconPath = vscode.ThemeIcon.File;
-  contextValue = 'foam.resource';
+  contextValue = 'pa-hub.resource';
 
   constructor(
     public readonly resource: Resource,

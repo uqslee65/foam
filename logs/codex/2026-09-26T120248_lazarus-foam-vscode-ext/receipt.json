@@ -1,0 +1,55 @@
+{
+  "model": "gpt-5.6-luna",
+  "route_class": "deterministic",
+  "model_override_reason": null,
+  "fallback_reason": null,
+  "codex_home": "/Users/slee65/.codex",
+  "checks": [
+    "python3 /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N12b_1.py",
+    "bash /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N12b_2.sh"
+  ],
+  "owns": [
+    "packages/foam-vscode/src/pa-hub/focus.ts",
+    "packages/foam-vscode/src/pa-hub/tests/test_focus.test.ts"
+  ],
+  "effort": "xhigh",
+  "verbosity": "low",
+  "profile": "lazarus",
+  "role": "worker",
+  "plan_ref": "N12",
+  "parent_slug": null,
+  "seq": null,
+  "packet_bytes": 6213,
+  "max_packet_bytes": 24000,
+  "large_packet_allowed": false,
+  "allow_large_packet_reason": null,
+  "ambient_allow": [
+    "logs/host/",
+    "logs/standup-events/",
+    "personal_assistant/autosort/",
+    "graphify-out/",
+    "packages/foam-vscode/out/"
+  ],
+  "no_acceptance_reason": null,
+  "acceptance_tests_source": null,
+  "no_gates_reason": "N12 co-plan from prior session",
+  "gates_status": "waived",
+  "dispatched": true,
+  "dispatch_returncode": 0,
+  "pre_pass": 1,
+  "pre_fail": 1,
+  "post_pass": 2,
+  "post_fail": 0,
+  "binding_check": "python3 /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N12b_1.py",
+  "files_changed": 2,
+  "receipt_dir": "/Users/slee65/projects/lazarus-foam-ext/logs/codex/2026-09-26T120248_lazarus-foam-vscode-ext",
+  "lint_skipped": false,
+  "changed_files": [
+    "/Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/pa-hub/focus.ts",
+    "/Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/pa-hub/tests/test_focus.test.ts"
+  ],
+  "outside_scope": [],
+  "ambient_ignored": [],
+  "verdict": "accepted",
+  "gates": null
+}

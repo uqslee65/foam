@@ -7,12 +7,12 @@ import { MarkdownLink } from '@foam/core';
 import { getTelemetry } from '../../services/telemetry';
 
 export const CONVERT_WIKILINK_TO_MDLINK = {
-  command: 'foam-vscode.convert-wikilink-to-mdlink',
+  command: 'pa-hub.convert-wikilink-to-mdlink',
   title: 'Foam: Convert Wikilink to Markdown Link',
 };
 
 export const CONVERT_MDLINK_TO_WIKILINK = {
-  command: 'foam-vscode.convert-mdlink-to-wikilink',
+  command: 'pa-hub.convert-mdlink-to-wikilink',
   title: 'Foam: Convert Markdown Link to Wikilink',
 };
 

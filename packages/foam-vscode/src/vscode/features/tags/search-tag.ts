@@ -3,7 +3,7 @@ import { Foam } from '@foam/core';
 import { TagItem } from './tags-explorer';
 
 export const SEARCH_TAG_COMMAND = {
-  command: 'foam-vscode.search-tag',
+  command: 'pa-hub.search-tag',
   title: 'Foam: Search Tag',
 };
 

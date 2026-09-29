@@ -1,0 +1,12 @@
+# CLAIM — Codex self-report. Evidence only, never verdict.
+DONE
+
+Files changed:
+
+- [open-node.ts](/Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/pa-hub/open-node.ts)
+- [test_open_node.test.ts](/Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/pa-hub/tests/test_open_node.test.ts)
+
+Checks:
+
+- `k_N11a_1.py` — PASS
+- `k_N11a_2.sh` — PASS (`vitest=6`, `tsc=0`, `oxlint=0`, regressions OK)

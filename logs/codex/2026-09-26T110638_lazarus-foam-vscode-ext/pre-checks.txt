@@ -1,0 +1,19 @@
+# PRE-DISPATCH
+
+$ python3 /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N11a_1.py
+exit: 1
+--- stdout ---
+FAIL k_N11a_1 open-node.ts missing
+FAIL k_N11a_1 test file missing
+--- stderr ---
+
+
+$ bash /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N11a_2.sh
+exit: 1
+--- stdout ---
+JSON report written to /tmp/pa_hub_gate_n11a_vitest.json
+FAIL k_N11a_2 vitest pass=0 fail=0 (need >=6/0)
+FAIL k_N11a_2 total_failures=1
+--- stderr ---
+
+

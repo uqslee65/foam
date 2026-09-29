@@ -26,7 +26,7 @@ function makeCompletionItem(
   item.detail = `${link} - ${snippet.description}`;
   if (afterCompletion !== 'noop') {
     item.command = {
-      command: 'foam-vscode.open-dated-note',
+      command: 'pa-hub.open-dated-note',
       title: 'Open a note for the given date',
       arguments: [snippet.date],
     };

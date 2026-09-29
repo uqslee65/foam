@@ -12,7 +12,7 @@ describe('getTemplatesDir', () => {
     expect(dir.path).toContain('.foam/templates');
   });
 
-  it('should return the custom templates directory when foam.templates.folder is set', async () => {
+  it('should return the custom templates directory when pa-hub.templates.folder is set', async () => {
     await withModifiedFoamConfiguration('templates.folder', 'custom/templates', async () => {
       const dir = getTemplatesDir();
       expect(dir.path).toContain('custom/templates');
@@ -22,7 +22,7 @@ describe('getTemplatesDir', () => {
 });
 
 describe('getTemplates', () => {
-  it('should find templates in a custom folder when foam.templates.folder is set', async () => {
+  it('should find templates in a custom folder when pa-hub.templates.folder is set', async () => {
     await withModifiedFoamConfiguration('templates.folder', 'custom-tpl', async () => {
       const template = await createFile('# Custom template', ['custom-tpl', 'my-template.md']);
       try {

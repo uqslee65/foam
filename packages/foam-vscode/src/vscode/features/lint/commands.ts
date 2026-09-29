@@ -26,8 +26,8 @@ export default async function activate(
   foamPromise: Promise<Foam>
 ) {
   context.subscriptions.push(
-    commands.registerCommand('foam-vscode.lint', async () => {
-      getTelemetry()?.trackCommand('foam-vscode.lint');
+    commands.registerCommand('pa-hub.lint', async () => {
+      getTelemetry()?.trackCommand('pa-hub.lint');
       return lint(await foamPromise);
     })
   );

@@ -13,7 +13,17 @@ import {
 } from './lib/graph-view-model';
 import { mergeStyles, resolveStyle } from './lib/style';
 import { hashString, hashToHSL } from './lib/colors';
-import type { GraphData, GraphStyle, GroupMatch, GroupRule } from './protocol';
+import {
+  parseExtensionMessage,
+  type FocusRequest,
+  type FocusResult,
+  type GraphData,
+  type GraphStyle,
+  type GroupMatch,
+  type GroupRule,
+  type RootGroup,
+  type WebviewMessage,
+} from './protocol';
 import type {
   GraphModel,
   ResolvedStyle,
@@ -28,6 +38,27 @@ import type { GraphCanvas } from './components/graph-canvas';
 import type { GroupDraft } from './components/control-panel';
 import './components/graph-canvas';
 import './components/control-panel';
+
+export const COMPACT_MAX_WIDTH = 480;
+
+export function computeLayoutMode(
+  width: number
+): 'compact' | 'wide' | null {
+  if (!Number.isFinite(width) || width <= 0) return null;
+  return width < COMPACT_MAX_WIDTH ? 'compact' : 'wide';
+}
+
+export function deriveRootGroupRules(
+  rootGroups: readonly RootGroup[] | undefined
+): GroupRule[] {
+  return (rootGroups ?? []).map(({ root, label, color }) => ({
+    id: `root:${root}`,
+    label,
+    color,
+    enabled: true,
+    match: { property: 'path', value: `/^${root}:/` },
+  }));
+}
 
 @customElement('foam-graph')
 export class FoamGraph extends LitElement {
@@ -60,8 +91,12 @@ export class FoamGraph extends LitElement {
     centerOnSelect: true,
     zoomOnSelect: true,
   };
+  @property({ type: String, reflect: true }) layoutMode: 'compact' | 'wide' =
+    'wide';
+  @property({ type: Boolean }) visible = true;
 
   @query('foam-graph-canvas') private canvas!: GraphCanvas;
+  private layoutResizeObserver: ResizeObserver | null = null;
 
   // Internal app state
   @state() private graphModel: GraphModel | null = null;
@@ -79,6 +114,7 @@ export class FoamGraph extends LitElement {
   @state() private animateLinks: LinkAnimation = 'forward';
   @state() private localStylePatch: GraphStyle = {};
   @state() private groups: GroupRule[] = [];
+  @state() private rootGroupRules: GroupRule[] = [];
   @state() private groupDraft: GroupDraft = {
     active: false,
     property: 'type',
@@ -99,6 +135,24 @@ export class FoamGraph extends LitElement {
     return [...this.selectedNodeIds][0] ?? null;
   }
 
+  connectedCallback() {
+    super.connectedCallback();
+    if ('ResizeObserver' in window) {
+      this.layoutResizeObserver?.disconnect();
+      this.layoutResizeObserver = new ResizeObserver(entries => {
+        const mode = computeLayoutMode(entries[0]?.contentRect.width);
+        if (mode !== null) this.layoutMode = mode;
+      });
+      this.layoutResizeObserver.observe(this);
+    }
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.layoutResizeObserver?.disconnect();
+    this.layoutResizeObserver = null;
+  }
+
   updated(changed: Map<string, unknown>) {
     let shouldRecomputeVisibleGraph = false;
     let shouldRecomputeGraphStates = false;
@@ -107,6 +161,7 @@ export class FoamGraph extends LitElement {
       this.graphModel = this.graphData
         ? createGraphModel(this.graphData)
         : null;
+      this.rootGroupRules = deriveRootGroupRules(this.graphData?.rootGroups);
       this._pruneInteractionState();
       shouldRecomputeVisibleGraph = true;
       shouldRecomputeGraphStates = true;
@@ -139,6 +194,10 @@ export class FoamGraph extends LitElement {
 
     if (changed.has('focusNodeId') || changed.has('graphScope')) {
       shouldRecomputeVisibleGraph = true;
+    }
+
+    if (changed.has('visible')) {
+      this.canvas?.setVisible(this.visible);
     }
 
     if (changed.has('selection') || changed.has('hoverNodeId')) {
@@ -174,7 +233,7 @@ export class FoamGraph extends LitElement {
         .visibleGraph=${this.visibleGraph}
         .graphStates=${this.graphStates}
         .style=${resolved}
-        .groups=${this.groups}
+        .groups=${[...this.groups, ...this.rootGroupRules]}
         .forces=${this.forces}
         .labels=${this.labels}
         .nodeFontSizeMultiplier=${this.nodeFontSizeMultiplier}
@@ -189,7 +248,7 @@ export class FoamGraph extends LitElement {
         @canvas-background-click=${(e: CustomEvent) =>
           this._onCanvasBackgroundClick(e.detail)}
       ></foam-graph-canvas>
-      ${this.showControls
+      ${this.showControls && this.layoutMode !== 'compact'
         ? html`<foam-control-panel
             .style=${resolved}
             .showNodesOfType=${this.showNodesOfType}
@@ -253,6 +312,50 @@ export class FoamGraph extends LitElement {
     } else if (this.selection.zoomOnSelect) {
       this.canvas?.zoom(3, 300);
     }
+  }
+
+  focusNode(request: FocusRequest): FocusResult {
+    if (!this.graphData || !this.graphModel) {
+      return {
+        requestId: request.requestId,
+        nodeId: request.nodeId,
+        ok: false,
+        reason: 'no-graph',
+      };
+    }
+
+    if (!Object.prototype.hasOwnProperty.call(this.graphData.nodeInfo, request.nodeId)) {
+      return {
+        requestId: request.requestId,
+        nodeId: request.nodeId,
+        ok: false,
+        reason: 'unknown-node',
+      };
+    }
+
+    if (!this.visibleGraph?.nodeInfo[request.nodeId]) {
+      return {
+        requestId: request.requestId,
+        nodeId: request.nodeId,
+        ok: false,
+        reason: 'hidden-node',
+      };
+    }
+
+    this._selectNode(request.nodeId, false);
+    if (request.center !== false) {
+      this.canvas?.centerOnNode(
+        request.nodeId,
+        this.selection.zoomOnSelect ? 3 : undefined,
+        300
+      );
+    }
+
+    return { requestId: request.requestId, nodeId: request.nodeId, ok: true };
+  }
+
+  getSelectedNodeIds(): string[] {
+    return [...this.selectedNodeIds];
   }
 
   private _onCanvasNodeClick(detail: { nodeId: string; append: boolean }) {
@@ -374,6 +477,34 @@ export class FoamGraph extends LitElement {
     if (!this.focusNodeId && this.graphScope !== 'full') {
       this._recomputeVisibleGraph();
     }
+  }
+}
+
+export function applyExtensionMessage(
+  element: FoamGraph,
+  raw: unknown
+): WebviewMessage | null {
+  const parsed = parseExtensionMessage(raw);
+  if (!parsed.ok) return null;
+
+  switch (parsed.value.type) {
+    case 'didUpdateGraphData':
+      element.graphData = parsed.value.payload;
+      return null;
+    case 'didUpdateStyle':
+      element.graphStyle = parsed.value.payload;
+      return null;
+    case 'didSelectNote':
+      element.selectNote(parsed.value.payload);
+      return null;
+    case 'didChangeVisibility':
+      element.visible = parsed.value.payload.visible;
+      return null;
+    case 'didRequestFocus':
+      return {
+        type: 'webviewDidFocusNode',
+        payload: element.focusNode(parsed.value.payload),
+      };
   }
 }
 

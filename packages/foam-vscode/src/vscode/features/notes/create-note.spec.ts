@@ -28,7 +28,7 @@ describe('create-note command', () => {
       .spyOn(window, 'showInputBox')
       .mockImplementationOnce(vi.fn(() => Promise.resolve('Test note')));
 
-    await commands.executeCommand('foam-vscode.create-note');
+    await commands.executeCommand('pa-hub.create-note');
     expect(spy).toHaveBeenCalled();
     const target = asAbsoluteWorkspaceUri(URI.file('Test note.md'));
     expectSameUri(target, window.activeTextEditor?.document.uri);
@@ -42,7 +42,7 @@ describe('create-note command', () => {
       'template-for-create-note.md',
     ]);
     const target = getUriInWorkspace();
-    await commands.executeCommand('foam-vscode.create-note', {
+    await commands.executeCommand('pa-hub.create-note', {
       notePath: target,
       templatePath: templateA.uri.path,
       text: 'hello',
@@ -55,7 +55,7 @@ describe('create-note command', () => {
 
   it('focuses on the newly created note', async () => {
     const target = getUriInWorkspace();
-    await commands.executeCommand('foam-vscode.create-note', {
+    await commands.executeCommand('pa-hub.create-note', {
       notePath: target,
       text: 'hello',
     });
@@ -66,7 +66,7 @@ describe('create-note command', () => {
 
   it('supports variables', async () => {
     const target = getUriInWorkspace();
-    await commands.executeCommand('foam-vscode.create-note', {
+    await commands.executeCommand('pa-hub.create-note', {
       notePath: target,
       text: 'hello ${FOAM_TITLE}',
       variables: { FOAM_TITLE: 'world' },
@@ -78,7 +78,7 @@ describe('create-note command', () => {
 
   it('supports date variables', async () => {
     const target = getUriInWorkspace();
-    await commands.executeCommand('foam-vscode.create-note', {
+    await commands.executeCommand('pa-hub.create-note', {
       notePath: target,
       text: 'hello ${FOAM_DATE_YEAR}',
       date: '2021-10-01',
@@ -93,7 +93,7 @@ describe('create-note command', () => {
     const content = await readFile(target.uri);
     expect(content).toEqual('hello');
 
-    await commands.executeCommand('foam-vscode.create-note', {
+    await commands.executeCommand('pa-hub.create-note', {
       notePath: target.uri,
       text: 'test overwrite',
       onFileExists: 'overwrite',
@@ -104,7 +104,7 @@ describe('create-note command', () => {
     expectSameUri(window.activeTextEditor.document.uri, target.uri);
 
     await closeEditors();
-    await commands.executeCommand('foam-vscode.create-note', {
+    await commands.executeCommand('pa-hub.create-note', {
       notePath: target.uri,
       text: 'test open',
       onFileExists: 'open',
@@ -115,7 +115,7 @@ describe('create-note command', () => {
     expectSameUri(window.activeTextEditor.document.uri, target.uri);
 
     await closeEditors();
-    await commands.executeCommand('foam-vscode.create-note', {
+    await commands.executeCommand('pa-hub.create-note', {
       notePath: target.uri,
       text: 'test cancel',
       onFileExists: 'cancel',
@@ -126,7 +126,7 @@ describe('create-note command', () => {
       .spyOn(window, 'showInputBox')
       .mockImplementationOnce(vi.fn(() => Promise.resolve(undefined)));
     await closeEditors();
-    await commands.executeCommand('foam-vscode.create-note', {
+    await commands.executeCommand('pa-hub.create-note', {
       notePath: target.uri,
       text: 'test ask',
       onFileExists: 'ask',
@@ -146,7 +146,7 @@ describe('create-note command', () => {
     await closeEditors();
     await showInEditor(base.uri);
     expectSameUri(window.activeTextEditor.document.uri, base.uri);
-    await commands.executeCommand('foam-vscode.create-note', {
+    await commands.executeCommand('pa-hub.create-note', {
       notePath: 'note-resolved-from-root.md',
       text: 'test resolving from root',
       onRelativeNotePath: 'resolve-from-root',
@@ -164,7 +164,7 @@ describe('create-note command', () => {
     await closeEditors();
     await showInEditor(base.uri);
     expectSameUri(window.activeTextEditor.document.uri, base.uri);
-    await commands.executeCommand('foam-vscode.create-note', {
+    await commands.executeCommand('pa-hub.create-note', {
       notePath: 'note-resolved-from-current-dir.md',
       text: 'test resolving from current dir',
       onRelativeNotePath: 'resolve-from-current-dir',
@@ -182,7 +182,7 @@ describe('create-note command', () => {
 
     await closeEditors();
     await showInEditor(base.uri);
-    await commands.executeCommand('foam-vscode.create-note', {
+    await commands.executeCommand('pa-hub.create-note', {
       notePath: 'note-that-should-not-be-created.md',
       text: 'test cancelling',
       onRelativeNotePath: 'cancel',
@@ -194,7 +194,7 @@ describe('create-note command', () => {
     const spy = vi
       .spyOn(window, 'showInputBox')
       .mockImplementationOnce(vi.fn(() => Promise.resolve(undefined)));
-    await commands.executeCommand('foam-vscode.create-note', {
+    await commands.executeCommand('pa-hub.create-note', {
       notePath: 'ask-me-about-it.md',
       text: 'test asking',
       onRelativeNotePath: 'ask',
@@ -207,7 +207,7 @@ describe('create-note command', () => {
   it('throws an error if the template file does not exist', async () => {
     const nonExistentTemplatePath = '/non/existent/template/path.md';
     await expect(
-      commands.executeCommand('foam-vscode.create-note', {
+      commands.executeCommand('pa-hub.create-note', {
         notePath: 'note-with-missing-template.md',
         templatePath: nonExistentTemplatePath,
         text: 'should not matter',
@@ -220,7 +220,7 @@ describe('create-note command', () => {
   it('throws an error if the template file does not exist (relative path)', async () => {
     try {
       const nonExistentTemplatePath = 'relative/non-existent-template.md';
-      await commands.executeCommand('foam-vscode.create-note', {
+      await commands.executeCommand('pa-hub.create-note', {
         notePath: 'note-with-missing-template-relative.md',
         templatePath: nonExistentTemplatePath,
         text: 'should not matter',
@@ -238,7 +238,7 @@ describe('create-note command', () => {
         ['.foam', 'templates', 'snippet-syntax-template.md']
       );
       const target = getUriInWorkspace();
-      await commands.executeCommand('foam-vscode.create-note', {
+      await commands.executeCommand('pa-hub.create-note', {
         notePath: target,
         templatePath: template.uri.path,
         title: 'world',
@@ -256,7 +256,7 @@ describe('create-note command', () => {
       const { editor } = await showInEditor(source.uri);
       editor.selection = new Selection(0, 23, 0, 28);
       const target = getUriInWorkspace();
-      await commands.executeCommand('foam-vscode.create-note', {
+      await commands.executeCommand('pa-hub.create-note', {
         notePath: target,
         text: 'Hello ${FOAM_SELECTED_TEXT}',
       });
@@ -271,7 +271,7 @@ describe('create-note command', () => {
 
     it('appends FOAM_SELECTED_TEXT given as a variable once', async () => {
       const target = getUriInWorkspace();
-      await commands.executeCommand('foam-vscode.create-note', {
+      await commands.executeCommand('pa-hub.create-note', {
         notePath: target,
         text: 'Hello',
         variables: { FOAM_SELECTED_TEXT: 'sel' },
@@ -288,7 +288,7 @@ describe('create-note command', () => {
         ['.foam', 'templates', 'js-content-template.js']
       );
       const result: Awaited<ReturnType<typeof createNote>> =
-        await commands.executeCommand('foam-vscode.create-note', {
+        await commands.executeCommand('pa-hub.create-note', {
           templatePath: template.uri.path,
           title: 'JS Title',
         });
@@ -300,7 +300,7 @@ describe('create-note command', () => {
   });
 
   it('creates a note with absolute path within the workspace', async () => {
-    await commands.executeCommand('foam-vscode.create-note', {
+    await commands.executeCommand('pa-hub.create-note', {
       notePath: '/note-in-workspace.md',
       text: 'hello workspace',
     });

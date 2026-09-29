@@ -1,0 +1,114 @@
+# N07: roots classification + graph-data builder (domain layer)
+
+## Shard identity
+- slug: N07-roots-graph-data
+- plan_ref: N07
+- depends: N06 (CLOSED), N08 protocol (LANDED)
+- blocks: N10 (graph_view wiring)
+
+## Owns (exactly these 3 files — no others)
+1. `packages/foam-vscode/src/pa-hub/roots.ts` (NEW)
+2. `packages/foam-vscode/src/pa-hub/graph-data.ts` (NEW)
+3. `packages/foam-vscode/src/pa-hub/roots.test.ts` (NEW)
+
+Do NOT modify `packages/foam-vscode/src/vscode/features/graph-webview/index.ts` — N10 wires it.
+Do NOT write `.agent/current-plan.md` or any file outside the 3 files listed above.
+
+## What to build
+
+### 1. roots.ts — workspace root classifier
+
+```typescript
+import type { URI } from '@foam/core';
+import { RootKind, RootGroup, makeNodeId, isValidNodePath, type NodeId } from '@foam/graph-view/protocol';
+import { relativeTo, isWithinPath } from '@foam/core';
+
+export interface ClassifiedRoot {
+  uri: URI;
+  kind: RootKind;
+}
+
+export interface RootClassification {
+  roots: ClassifiedRoot[];
+  rootGroups: RootGroup[];
+}
+```
+
+**`classifyRoots(workspaceRoots: URI[], classification?: Map<URI, RootKind>): RootClassification`**
+
+- If `classification` is provided, use it. Otherwise: first folder = `'vault'`, rest = `'sources'`.
+- Return `rootGroups` array: one per root with hardcoded colours:
+  - vault: `{ root: 'vault', label: 'Vault', color: '#4a9eff' }`
+  - sources: `{ root: 'sources', label: 'Sources', color: '#ff9f43' }`
+- Pure function, no `vscode` import.
+
+**`resolveRoot(uri: URI, classifiedRoots: ClassifiedRoot[]): ClassifiedRoot | undefined`**
+
+- Return the first `ClassifiedRoot` where `isWithinPath(uri, root.uri)` is true.
+- Order of `classifiedRoots` matters (first match wins).
+
+**`makeResourceNodeId(uri: URI, classifiedRoots: ClassifiedRoot[]): NodeId | undefined`**
+
+- Call `resolveRoot` to find the root.
+- If no root, return `undefined`.
+- Compute `relativePath = relativeTo(uri.path, root.uri.path)`.
+- Validate with `isValidNodePath(relativePath)`. If invalid, return `undefined`.
+- Return `makeNodeId(root.kind, relativePath)`.
+
+### 2. graph-data.ts — root-qualified graph data builder
+
+```typescript
+import type { URI } from '@foam/core';
+import type { Resource, Connection } from '@foam/core';
+import { buildGraphData } from '@foam/core';
+import type { GraphData, NodeId, RootGroup } from '@foam/graph-view/protocol';
+import { classifyRoots, makeResourceNodeId, type ClassifiedRoot, type RootClassification } from './roots';
+```
+
+**`buildRootQualifiedGraphData(resources: Resource[], connections: Connection[], workspaceRoots: URI[]): { graphData: GraphData; idToUri: Map<NodeId, URI> }`**
+
+- Call `classifyRoots(workspaceRoots)` to get classification.
+- Call `buildGraphData(resources, connections, { resourceToId: uri => makeResourceNodeId(uri, classification.roots) ?? undefined, includePlaceholders: false })`.
+- Build `idToUri: Map<NodeId, URI>` by iterating resources and calling `makeResourceNodeId` — store `id -> resource.uri` for each that returns a NodeId.
+- Return `{ graphData: { ...builtGraphData, rootGroups: classification.rootGroups }, idToUri }`.
+
+**Key behaviours:**
+- `resourceToId` returns `undefined` for resources outside all roots → excluded (no node, no links).
+- `includePlaceholders: false` — placeholders can't be assigned roots. This is a VISIBLE behaviour change vs current graph-webview (`includePlaceholders: true`). Document in commit message.
+- Never passes invalid paths to `makeNodeId` (which throws RangeError) — `isValidNodePath` pre-validates.
+- No `vscode` import anywhere.
+
+### 3. roots.test.ts — unit tests
+
+Test file name pattern: all test names MUST be prefixed with `test_roots_` or `test_graph_data_` (e.g. `it('test_roots_first_folder_is_vault', ...)`). This is required for the vitest `-t` filter used in gate checks.
+
+Use `@foam/core`'s URI constructor to build test URIs. Do NOT use `vscode` or temp directories. buildGraphData is pure data in — build `Resource[]` and `Connection[]` directly.
+
+**Required test cases:**
+
+1. `test_roots_single_root_is_vault` — one workspace root → classified as vault
+2. `test_roots_two_roots_first_vault_rest_sources` — two roots → first vault, second sources
+3. `test_roots_resolveRoot_matches_first` — resource under first root returns that root
+4. `test_roots_resolveRoot_no_match` — resource outside all roots returns undefined
+5. `test_roots_makeResourceNodeId_valid` — returns `vault:notes/foo.md` for a resource under vault root
+6. `test_roots_makeResourceNodeId_outside_roots` — returns undefined, no throw
+7. `test_roots_makeResourceNodeId_invalid_path` — resource with path that fails isValidNodePath → returns undefined, no throw (no RangeError)
+8. `test_graph_data_no_absolute_paths` — `JSON.stringify(graphData)` contains no `file:` substring and no absolute path from fixture root
+9. `test_graph_data_no_file_uri` — same as above, explicit `file://` check
+10. `test_graph_data_two_roots_correct_ids` — resources under vault get `vault:` prefix, resources under sources get `sources:` prefix
+11. `test_graph_data_resource_outside_roots_excluded` — resource not under any root → not in nodeInfo
+12. `test_graph_data_rootGroups_present` — returned graphData has rootGroups with vault and sources entries
+13. `test_graph_data_idToUri_mapping` — idToUri maps each NodeId back to original URI
+14. `test_graph_data_placeholders_excluded` — includePlaceholders is false (verify no placeholder-type nodes in output when connections reference non-existent targets)
+
+## Import paths
+
+These are the correct import paths — do not change them:
+- `@foam/core` — URI, Resource, Connection, relativeTo, isWithinPath, buildGraphData
+- `@foam/graph-view/protocol` — RootKind, RootGroup, NodeId, GraphData, makeNodeId, isValidNodePath, parseNodeId
+
+The `@foam/graph-view/protocol` subpath has runtime JS exports at `packages/foam-graph/out/protocol.js`. It is NOT type-only.
+
+## done_when
+
+All 14 test cases pass AND tsc --noEmit clean AND no `file:` or absolute path in serialized GraphData.

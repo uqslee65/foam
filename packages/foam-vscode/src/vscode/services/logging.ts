@@ -3,7 +3,7 @@ import { IDisposable } from '@foam/core';
 import { BaseLogger, ILogger, LogLevel } from '@foam/core';
 
 function getFoamLoggerLevel(): LogLevel {
-  return workspace.getConfiguration('foam.logging').get('level') ?? 'info';
+  return workspace.getConfiguration('pa-hub.logging').get('level') ?? 'info';
 }
 
 export interface VsCodeLogger extends ILogger, IDisposable {
@@ -46,7 +46,7 @@ export const exposeLogger = (
   logger: VsCodeLogger
 ): void => {
   context.subscriptions.push(
-    commands.registerCommand('foam-vscode.set-log-level', async () => {
+    commands.registerCommand('pa-hub.set-log-level', async () => {
       const items: LogLevel[] = ['debug', 'info', 'warn', 'error'];
       const level = await window.showQuickPick(
         items.map(item => ({

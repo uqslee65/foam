@@ -1,0 +1,19 @@
+# PRE-DISPATCH
+
+$ python3 /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N10a_1.py
+exit: 1
+--- stdout ---
+FAIL k_N10a_1 webview-security.ts missing at /Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/pa-hub/webview-security.ts
+FAIL k_N10a_1 test_webview_security.test.ts missing at /Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/pa-hub/tests/test_webview_security.test.ts
+--- stderr ---
+
+
+$ bash /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N10a_2.sh
+exit: 1
+--- stdout ---
+JSON report written to /tmp/pa_hub_gate_n10a_vitest.json
+FAIL k_N10a_2 vitest pass=0 fail=0 (need >=13/0)
+FAIL k_N10a_2 total_failures=1
+--- stderr ---
+
+

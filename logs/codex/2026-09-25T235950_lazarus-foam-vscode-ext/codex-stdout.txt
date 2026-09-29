@@ -1,0 +1,15 @@
+# CLAIM — Codex self-report. Evidence only, never verdict.
+DONE
+
+Files changed:
+
+- [webview-security.ts](/Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/pa-hub/webview-security.ts)
+- [test_webview_security.test.ts](/Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/pa-hub/tests/test_webview_security.test.ts)
+
+Checks:
+
+- 13/13 security tests passed
+- `tsc --noEmit` passed
+- Both acceptance checks passed
+- No `vscode` import present
+- Full suite had 3 unrelated existing cache-service failures

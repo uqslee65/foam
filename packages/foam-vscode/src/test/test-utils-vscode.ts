@@ -84,7 +84,7 @@ export const getUriInWorkspace = (...filepath: string[]) => {
 
 export const getFoamFromVSCode = async (): Promise<Foam> => {
   // In test environment, try different extension IDs
-  const extension = vscode.extensions.getExtension('foam.foam-vscode');
+  const extension = vscode.extensions.getExtension('lazarus.pa-hub');
 
   const exports = extension.isActive
     ? extension.exports
@@ -230,7 +230,7 @@ export const withModifiedFoamConfiguration = (
   key,
   value,
   fn: () => void | Promise<void>
-) => withModifiedConfiguration(`foam.${key}`, value, fn);
+) => withModifiedConfiguration(`pa-hub.${key}`, value, fn);
 
 /**
  * Utility function to check if two URIs are the same.

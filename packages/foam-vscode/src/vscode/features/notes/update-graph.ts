@@ -1,7 +1,7 @@
 import { commands, ExtensionContext } from 'vscode';
 import { Foam } from '@foam/core';
 
-export const UPDATE_GRAPH_COMMAND_NAME = 'foam-vscode.update-graph';
+export const UPDATE_GRAPH_COMMAND_NAME = 'pa-hub.update-graph';
 
 export default async function activate(
   context: ExtensionContext,

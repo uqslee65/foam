@@ -20,7 +20,7 @@ describe('Graph Panel', () => {
     });
 
     // Execute show-graph command
-    await vscode.commands.executeCommand('foam-vscode.show-graph');
+    await vscode.commands.executeCommand('pa-hub.show-graph');
 
     // Wait a bit for the webview to be created
     await wait(200);
@@ -40,7 +40,7 @@ describe('Graph Panel', () => {
     await closeEditors();
 
     // Execute show-graph command
-    await vscode.commands.executeCommand('foam-vscode.show-graph');
+    await vscode.commands.executeCommand('pa-hub.show-graph');
 
     // Wait a bit for the webview to be created
     await wait(200);
@@ -63,7 +63,7 @@ describe('Graph Panel', () => {
     });
 
     // Create graph (should be beside column 1, so in column 2)
-    await vscode.commands.executeCommand('foam-vscode.show-graph');
+    await vscode.commands.executeCommand('pa-hub.show-graph');
     await wait(200);
 
     let graphPanel = vscode.window.tabGroups.all
@@ -86,7 +86,7 @@ describe('Graph Panel', () => {
     );
 
     // Show graph again
-    await vscode.commands.executeCommand('foam-vscode.show-graph');
+    await vscode.commands.executeCommand('pa-hub.show-graph');
     await wait(200);
 
     // Find the graph panel - it should still be in its original column
@@ -110,7 +110,7 @@ describe('Graph Panel', () => {
     );
 
     // Step 4: Show graph (should appear beside the editor, not in column 1)
-    await vscode.commands.executeCommand('foam-vscode.show-graph');
+    await vscode.commands.executeCommand('pa-hub.show-graph');
     await wait(200);
 
     let graphPanel = vscode.window.tabGroups.all
@@ -136,7 +136,7 @@ describe('Graph Panel', () => {
     // that the graph stays in its column when we try to reveal it
 
     // Step 8: Show graph again - it should NOT move
-    await vscode.commands.executeCommand('foam-vscode.show-graph');
+    await vscode.commands.executeCommand('pa-hub.show-graph');
     await wait(200);
 
     graphPanel = vscode.window.tabGroups.all

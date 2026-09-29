@@ -1,0 +1,493 @@
+--- /Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/vscode/features/graph-webview/index.ts (before)
++++ /Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/vscode/features/graph-webview/index.ts (after)
+@@ -6,91 +6,172 @@
+ import { getFoamVsCodeConfig } from '../../config';
+ import { getActiveTabUri, onDidChangeActiveTab } from '../../services/editor';
+ import { buildGraphData } from '@foam/core';
+-import { getTelemetry } from '../../services/telemetry';
++import {
++  buildCsp,
++  fillGraphHtml,
++  generateNonce,
++} from '../../../pa-hub/webview-security';
+ import type {
+   GraphStyle,
+   GraphViewConfig,
+   ShowGraphArgs,
+ } from '@foam/graph-view/protocol' with { 'resolution-mode': 'import' };
+ 
++interface GraphWebviewHost {
++  webview: vscode.Webview;
++}
++
++class GraphWebviewProvider implements vscode.WebviewViewProvider {
++  private webviewView: vscode.WebviewView | undefined;
++
++  constructor(
++    private readonly context: vscode.ExtensionContext,
++    private readonly foamPromise: Promise<Foam>
++  ) {}
++
++  async resolveWebviewView(
++    webviewView: vscode.WebviewView,
++    _context: vscode.WebviewViewResolveContext,
++    _token: vscode.CancellationToken
++  ): Promise<void> {
++    this.webviewView = webviewView;
++
++    const datavizUri = vscode.Uri.joinPath(
++      this.context.extensionUri,
++      'static',
++      'dataviz'
++    );
++    webviewView.webview.options = {
++      enableScripts: true,
++      localResourceRoots: [datavizUri],
++    };
++
++    const nonce = generateNonce();
++    const csp = buildCsp({
++      cspSource: webviewView.webview.cspSource,
++      nonce,
++    });
++    const template = new TextDecoder('utf-8').decode(
++      await vscode.workspace.fs.readFile(
++        vscode.Uri.joinPath(datavizUri, 'index.html')
++      )
++    );
++    const filled = fillGraphHtml(template, {
++      csp,
++      nonce,
++      resolveAsset: fileName =>
++        webviewView.webview
++          .asWebviewUri(vscode.Uri.joinPath(datavizUri, fileName))
++          .toString(),
++    });
++    webviewView.webview.html = filled;
++
++    const foam = await this.foamPromise;
++    webviewView.webview.onDidReceiveMessage(
++      async message => {
++        switch (message.type) {
++          case 'webviewDidLoad': {
++            const style = getGraphStyle();
++            webviewView.webview.postMessage({
++              type: 'didUpdateStyle',
++              payload: style,
++            });
++
++            updateGraph(webviewView, foam);
++            break;
++          }
++          case 'webviewDidSelectNode': {
++            const noteUri = vscode.Uri.parse(message.payload);
++            const selectedNote = foam.workspace.get(fromVsCodeUri(noteUri));
++
++            if (isSome(selectedNote)) {
++              const navigateToPreview = getFoamVsCodeConfig(
++                'graph.navigateToPreview',
++                false
++              );
++              const command = getNodeNavigationCommand(
++                noteUri.path,
++                navigateToPreview
++              );
++              if (command === 'markdown.showPreview') {
++                vscode.commands.executeCommand(command, noteUri);
++              } else {
++                vscode.commands.executeCommand(
++                  command,
++                  noteUri,
++                  vscode.ViewColumn.One
++                );
++              }
++            }
++            break;
++          }
++          case 'webviewDidBecomeReady': {
++            break;
++          }
++          case 'error': {
++            Logger.error('An error occurred in the graph view', message.payload);
++            break;
++          }
++        }
++      },
++      undefined,
++      this.context.subscriptions
++    );
++
++    const noteUpdatedListener = foam.graph.onDidUpdate(() => {
++      updateGraph(webviewView, foam);
++    });
++    const editorListener = onDidChangeActiveTab(() => {
++      handleActiveResourceChange(
++        webviewView,
++        foam,
++        getActiveTabUri(foam.workspace)
++      );
++    });
++    webviewView.onDidDispose(() => {
++      noteUpdatedListener.dispose();
++      editorListener.dispose();
++      if (this.webviewView === webviewView) {
++        this.webviewView = undefined;
++      }
++    });
++  }
++
++  updateStyle(style: GraphStyle): void {
++    this.webviewView?.webview.postMessage({
++      type: 'didUpdateStyle',
++      payload: style,
++    });
++  }
++}
++
+ export default async function activate(
+   context: vscode.ExtensionContext,
+   foamPromise: Promise<Foam>
+ ) {
+-  let panel: vscode.WebviewPanel | undefined = undefined;
++  const provider = new GraphWebviewProvider(context, foamPromise);
+   context.subscriptions.push(
+     vscode.workspace.onDidChangeConfiguration(event => {
+-      if (panel) {
+-        if (event.affectsConfiguration('pa-hub.graph.style')) {
+-          const style = getGraphStyle();
+-          panel.webview.postMessage({
+-            type: 'didUpdateStyle',
+-            payload: style,
+-          });
+-        }
++      if (event.affectsConfiguration('pa-hub.graph.style')) {
++        provider.updateStyle(getGraphStyle());
+       }
+-    })
+-  );
+-
+-  const attachPanelListeners = (p: vscode.WebviewPanel, foam: Foam) => {
+-    const onFoamChanged = _ => {
+-      updateGraph(p, foam);
+-    };
+-    const noteUpdatedListener = foam.graph.onDidUpdate(onFoamChanged);
+-    const editorListener = onDidChangeActiveTab(() => {
+-      handleActiveResourceChange(p, foam, getActiveTabUri(foam.workspace));
+-    });
+-    p.onDidDispose(() => {
+-      noteUpdatedListener.dispose();
+-      editorListener.dispose();
+-      panel = undefined;
+-    });
+-  };
+-
+-  context.subscriptions.push(
+-    vscode.window.registerWebviewPanelSerializer('pa-hub.graph', {
+-      async deserializeWebviewPanel(
+-        webviewPanel: vscode.WebviewPanel,
+-        _state: unknown
+-      ) {
+-        panel = webviewPanel;
+-        const foam = await foamPromise;
+-        await setupGraphPanel(webviewPanel, foam, context, undefined);
+-        attachPanelListeners(webviewPanel, foam);
+-      },
++    }),
++    vscode.window.registerWebviewViewProvider('pa-hub.graph', provider, {
++      webviewOptions: { retainContextWhenHidden: true },
+     })
+   );
+ 
+   context.subscriptions.push(
+     vscode.commands.registerCommand(
+       'pa-hub.show-graph',
+-      async (args?: ShowGraphArgs) => {
+-        getTelemetry()?.trackCommand('pa-hub.show-graph');
+-        const { style, view } = resolveViewStyle(args);
+-        if (panel) {
+-          panel.title = view ? `Foam Graph: ${view}` : 'Foam Graph';
+-          panel.webview.postMessage({ type: 'didUpdateStyle', payload: style });
+-          panel.reveal();
+-        } else {
+-          const foam = await foamPromise;
+-          panel = await createGraphPanel(foam, context, {
+-            initialStyle: style,
+-            view,
+-          });
+-          attachPanelListeners(panel, foam);
+-        }
+-      }
++      () => vscode.commands.executeCommand('pa-hub.graph.focus')
+     )
+   );
+-  const shouldOpenGraphOnStartup = getFoamVsCodeConfig('graph.onStartup');
+-  if (shouldOpenGraphOnStartup) {
+-    vscode.commands.executeCommand('pa-hub.show-graph');
+-  }
+-}
+-
+-function updateGraph(panel: vscode.WebviewPanel, foam: Foam) {
++}
++
++function updateGraph(webviewHost: GraphWebviewHost, foam: Foam) {
+   const graph = generateGraphData(foam);
+-  panel.webview.postMessage({
++  webviewHost.webview.postMessage({
+     type: 'didUpdateGraphData',
+     payload: graph,
+   });
+@@ -104,7 +185,7 @@
+   });
+ }
+ 
+-function cutTitle(title: string): string {
++export function cutTitle(title: string): string {
+   const maxLen = vscode.workspace
+     .getConfiguration('pa-hub.graph')
+     .get('titleMaxLength', 24);
+@@ -112,115 +193,6 @@
+     return title.substring(0, maxLen).concat('...');
+   }
+   return title;
+-}
+-
+-async function createGraphPanel(
+-  foam: Foam,
+-  context: vscode.ExtensionContext,
+-  options: { initialStyle?: GraphStyle; view?: string } = {}
+-) {
+-  const title = options.view ? `Foam Graph: ${options.view}` : 'Foam Graph';
+-  const panel = vscode.window.createWebviewPanel(
+-    'pa-hub.graph',
+-    title,
+-    vscode.ViewColumn.Beside,
+-    {
+-      enableScripts: true,
+-      retainContextWhenHidden: true,
+-    }
+-  );
+-
+-  await setupGraphPanel(panel, foam, context, options.initialStyle);
+-  return panel;
+-}
+-
+-async function setupGraphPanel(
+-  panel: vscode.WebviewPanel,
+-  foam: Foam,
+-  context: vscode.ExtensionContext,
+-  initialStyle?: GraphStyle
+-) {
+-  panel.webview.html = await getWebviewContent(context, panel);
+-
+-  panel.webview.onDidReceiveMessage(
+-    async message => {
+-      switch (message.type) {
+-        case 'webviewDidLoad': {
+-          const style = initialStyle ?? getGraphStyle();
+-          panel.webview.postMessage({
+-            type: 'didUpdateStyle',
+-            payload: style,
+-          });
+-
+-          updateGraph(panel, foam);
+-          break;
+-        }
+-        case 'webviewDidSelectNode': {
+-          const noteUri = vscode.Uri.parse(message.payload);
+-          const selectedNote = foam.workspace.get(fromVsCodeUri(noteUri));
+-
+-          if (isSome(selectedNote)) {
+-            const navigateToPreview = getFoamVsCodeConfig(
+-              'graph.navigateToPreview',
+-              false
+-            );
+-            const command = getNodeNavigationCommand(
+-              noteUri.path,
+-              navigateToPreview
+-            );
+-            if (command === 'markdown.showPreview') {
+-              vscode.commands.executeCommand(command, noteUri);
+-            } else {
+-              vscode.commands.executeCommand(
+-                command,
+-                noteUri,
+-                vscode.ViewColumn.One
+-              );
+-            }
+-          }
+-          break;
+-        }
+-        case 'error': {
+-          Logger.error('An error occurred in the graph view', message.payload);
+-          break;
+-        }
+-      }
+-    },
+-    undefined,
+-    context.subscriptions
+-  );
+-}
+-
+-async function getWebviewContent(
+-  context: vscode.ExtensionContext,
+-  panel: vscode.WebviewPanel
+-) {
+-  const datavizUri = vscode.Uri.joinPath(
+-    context.extensionUri,
+-    'static',
+-    'dataviz'
+-  );
+-  const getWebviewUri = (fileName: string) =>
+-    panel.webview.asWebviewUri(vscode.Uri.joinPath(datavizUri, fileName));
+-
+-  const indexHtml = new TextDecoder('utf-8').decode(
+-    await vscode.workspace.fs.readFile(
+-      vscode.Uri.joinPath(datavizUri, 'index.html')
+-    )
+-  );
+-
+-  // Replace the script paths with the appropriate webview URI.
+-  const filled = indexHtml.replace(
+-    /data-replace (src|href)="[^"]+"/g,
+-    match => {
+-      const i = match.indexOf(' ');
+-      const j = match.indexOf('=');
+-      const uri = getWebviewUri(match.slice(j + 2, -1).trim());
+-      return match.slice(i + 1, j) + '="' + uri.toString() + '"';
+-    }
+-  );
+-
+-  return filled;
+ }
+ 
+ export function getGraphStyle(): GraphStyle {
+@@ -301,14 +273,14 @@
+ }
+ 
+ export function handleActiveResourceChange(
+-  panel: vscode.WebviewPanel | undefined,
++  webviewHost: GraphWebviewHost | undefined,
+   foam: Foam,
+   uri: URI | undefined
+ ) {
+-  if (panel && uri && uri.scheme !== 'untitled') {
++  if (webviewHost && uri && uri.scheme !== 'untitled') {
+     const note = foam.workspace.find(uri);
+     if (isSome(note)) {
+-      panel.webview.postMessage({
++      webviewHost.webview.postMessage({
+         type: 'didSelectNote',
+         payload: note.uri.path,
+       });
+--- /Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/pa-hub/tests/test_graph_view.test.ts (before)
++++ /Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/pa-hub/tests/test_graph_view.test.ts (after)
+@@ -0,0 +1,109 @@
++import { beforeEach, describe, expect, it } from 'vitest';
++import * as vscode from 'vscode';
++import { URI } from '@foam/core';
++import {
++  cutTitle,
++  getGraphStyle,
++  getNodeNavigationCommand,
++  handleActiveResourceChange,
++  mergeStyles,
++  resolveViewStyle,
++  viewConfigToStyle,
++} from '../../vscode/features/graph-webview/index';
++
++beforeEach(async () => {
++  const config = vscode.workspace.getConfiguration();
++  await config.update('pa-hub.graph.style', {});
++  await config.update('pa-hub.graph.titleMaxLength', 24);
++  await config.update('pa-hub.graph.views', []);
++});
++
++describe('graph view helpers', () => {
++  it('test_graph_view_get_node_nav_md_preview', () => {
++    expect(getNodeNavigationCommand('/notes/foo.md', true)).toBe(
++      'markdown.showPreview'
++    );
++  });
++
++  it('test_graph_view_get_node_nav_md_no_preview', () => {
++    expect(getNodeNavigationCommand('/notes/foo.md', false)).toBe('vscode.open');
++  });
++
++  it('test_graph_view_get_node_nav_non_md', () => {
++    expect(getNodeNavigationCommand('/notes/foo.txt', true)).toBe('vscode.open');
++  });
++
++  it('test_graph_view_merge_styles_patch_wins', () => {
++    const merged = mergeStyles(
++      { colorMode: 'none' },
++      { colorMode: 'directory' }
++    );
++    expect(merged.colorMode).toBe('directory');
++  });
++
++  it('test_graph_view_merge_styles_base_preserved', () => {
++    const merged = mergeStyles(
++      { showNodesOfType: { tag: true, placeholder: false } },
++      { colorMode: 'type' }
++    );
++    expect(merged.showNodesOfType).toEqual({ tag: true, placeholder: false });
++  });
++
++  it('test_graph_view_view_config_colors', () => {
++    expect(
++      viewConfigToStyle({ show: { tag: { color: '#ff0000' } } })
++    ).toEqual({
++      showNodesOfType: { tag: true },
++      style: { node: { tag: '#ff0000' } },
++    });
++  });
++
++  it('test_graph_view_view_config_visibility', () => {
++    expect(
++      viewConfigToStyle({
++        show: { tag: { enabled: false }, placeholder: { enabled: true } },
++      })
++    ).toEqual({
++      showNodesOfType: { tag: false, placeholder: true },
++    });
++  });
++
++  it('test_graph_view_view_config_empty', () => {
++    expect(viewConfigToStyle({})).toEqual({});
++  });
++
++  it('test_graph_view_get_graph_style_reads_config', async () => {
++    await vscode.workspace
++      .getConfiguration()
++      .update('pa-hub.graph.style', { background: '#123456' });
++
++    expect(getGraphStyle()).toEqual({
++      style: { background: '#123456' },
++    });
++  });
++
++  it('test_graph_view_cut_title_truncates', async () => {
++    await vscode.workspace.getConfiguration().update('pa-hub.graph.titleMaxLength', 5);
++
++    expect(cutTitle('Long title')).toBe('Long ...');
++  });
++
++  it('test_graph_view_cut_title_short_passthrough', async () => {
++    await vscode.workspace.getConfiguration().update('pa-hub.graph.titleMaxLength', 20);
++
++    expect(cutTitle('Short title')).toBe('Short title');
++  });
++
++  it('test_graph_view_resolve_view_no_args', () => {
++    expect(resolveViewStyle()).toEqual({
++      style: { style: {} },
++      view: undefined,
++    });
++  });
++
++  it('test_graph_view_handle_active_resource_no_args', () => {
++    expect(() =>
++      handleActiveResourceChange(undefined, {} as any, URI.file('/note.md'))
++    ).not.toThrow();
++  });
++});

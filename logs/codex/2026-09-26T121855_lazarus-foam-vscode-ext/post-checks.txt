@@ -1,0 +1,22 @@
+# EVIDENCE — host-executed. This is the verdict.
+
+$ python3 /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N12c_1.py
+exit: 0
+--- stdout ---
+PASS k_N12c_1 idx=ok tst=17 tsc=0
+--- stderr ---
+
+
+$ bash /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N12c_2.sh
+exit: 0
+--- stdout ---
+JSON report written to /tmp/pa_hub_gate_n12c_gv_vitest.json
+graph_view: pass=17 fail=0
+JSON report written to /tmp/pa_hub_gate_n12c_focus_vitest.json
+focus: pass=16 fail=0
+JSON report written to /tmp/pa_hub_gate_n12c_on_vitest.json
+open_node: pass=6 fail=0
+PASS k_N12c_2 graph_view=17 focus=16 open_node=6 tsc=0 oxlint=0 regressions=ok
+--- stderr ---
+
+

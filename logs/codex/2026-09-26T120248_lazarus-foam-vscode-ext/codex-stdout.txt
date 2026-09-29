@@ -1,0 +1,14 @@
+# CLAIM — Codex self-report. Evidence only, never verdict.
+DONE
+
+Files changed:
+- `packages/foam-vscode/src/pa-hub/focus.ts`
+- `packages/foam-vscode/src/pa-hub/tests/test_focus.test.ts`
+
+Checks:
+- `k_N12b_1.py`: PASS
+- `k_N12b_2.sh`: PASS
+- Focus tests: 16 passed
+- `tsc --noEmit`: clean
+- oxlint: clean
+- Full suite: 4 unrelated existing failures remain.

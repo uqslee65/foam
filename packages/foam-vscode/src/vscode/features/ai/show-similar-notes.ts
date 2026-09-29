@@ -6,7 +6,7 @@ import { getActiveTabUri } from '../../services/editor';
 import { BUILD_EMBEDDINGS_COMMAND } from './build-embeddings';
 
 export const SHOW_SIMILAR_NOTES_COMMAND = {
-  command: 'foam-vscode.show-similar-notes',
+  command: 'pa-hub.show-similar-notes',
   title: 'Foam: Show Similar Notes',
 };
 

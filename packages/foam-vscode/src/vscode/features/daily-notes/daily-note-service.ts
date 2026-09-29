@@ -149,7 +149,7 @@ export async function createDailyNoteIfNotExists(targetDate: Date, foam: Foam) {
       .then(async action => {
         if (action === CREATE_DAILY_NOTE_WARNING_RESPONSE) {
           // Must match where getDailyNoteTemplateUri looks, which follows
-          // `foam.templates.folder` — otherwise the file lands somewhere Foam
+          // `pa-hub.templates.folder` — otherwise the file lands somewhere Foam
           // never reads and this warning comes back every time.
           await writeFile(
             getTemplatesDir().joinPath('daily-note.md'),
@@ -186,7 +186,7 @@ export async function createDailyNoteIfNotExists(targetDate: Date, foam: Foam) {
   );
 
   return NoteFactory.createNote(foam, {
-    trigger: TriggerFactory.createCommandTrigger('foam.open-daily-note'),
+    trigger: TriggerFactory.createCommandTrigger('pa-hub.open-daily-note'),
     resolver,
     loadTemplate: async () => template,
     fallbackFilepath: getDailyNoteUri(targetDate),

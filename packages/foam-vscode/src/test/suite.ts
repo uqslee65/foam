@@ -72,7 +72,7 @@ export async function run(): Promise<void> {
     if (vscode?.workspace) {
       await vscode.workspace
         .getConfiguration()
-        .update('foam.edit.linkReferenceDefinitions', 'off');
+        .update('pa-hub.edit.linkReferenceDefinitions', 'off');
     }
   } catch (e) {
     // vscode not available outside extension host — ignore

@@ -52,21 +52,21 @@ export class SmartFoldersProvider extends BaseTreeProvider<Element> {
     super();
     this.groupBy = new ContextMemento<'off' | 'folder'>(
       state,
-      `foam-vscode.views.${this.providerId}.group-by`,
+      `pa-hub.views.${this.providerId}.group-by`,
       'folder'
     );
 
     if (!registerCommands) return;
     this.disposables.push(
       vscode.commands.registerCommand(
-        `foam-vscode.views.${this.providerId}.group-by:folder`,
+        `pa-hub.views.${this.providerId}.group-by:folder`,
         () => {
           this.groupBy.update('folder');
           this.refresh();
         }
       ),
       vscode.commands.registerCommand(
-        `foam-vscode.views.${this.providerId}.group-by:off`,
+        `pa-hub.views.${this.providerId}.group-by:off`,
         () => {
           this.groupBy.update('off');
           this.refresh();

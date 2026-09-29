@@ -23,8 +23,8 @@ type GroupedResourceTreeItem = UriTreeItem | FolderTreeItem<URI>;
  *
  * **NOTE**: In order for this provider to correctly function, you must define the following command in the package.json file:
  * ```
- * foam-vscode.views.${providerId}.group-by-folder
- * foam-vscode.views.${providerId}.group-off
+ * pa-hub.views.${providerId}.group-by-folder
+ * pa-hub.views.${providerId}.group-off
  * ```
  * Where `providerId` is the same string provided to the constructor.
  * @export
@@ -41,8 +41,8 @@ export abstract class GroupedResourcesTreeDataProvider extends FolderTreeProvide
    * Creates an instance of GroupedResourcesTreeDataProvider.
    * **NOTE**: In order for this provider to correctly function, you must define the following command in the package.json file:
    * ```
-   * foam-vscode.views.${this.providerId}.group-by:folder
-   * foam-vscode.views.${this.providerId}.group-by:off
+   * pa-hub.views.${this.providerId}.group-by:folder
+   * pa-hub.views.${this.providerId}.group-by:off
    * ```
    * Where `providerId` is the same string provided to this constructor.
    *
@@ -59,20 +59,20 @@ export abstract class GroupedResourcesTreeDataProvider extends FolderTreeProvide
     super();
     this.groupBy = new ContextMemento<'off' | 'folder'>(
       this.state,
-      `foam-vscode.views.${this.providerId}.group-by`,
+      `pa-hub.views.${this.providerId}.group-by`,
       'folder'
     );
 
     this.disposables.push(
       vscode.commands.registerCommand(
-        `foam-vscode.views.${this.providerId}.group-by:folder`,
+        `pa-hub.views.${this.providerId}.group-by:folder`,
         () => {
           this.groupBy.update('folder');
           this.refresh();
         }
       ),
       vscode.commands.registerCommand(
-        `foam-vscode.views.${this.providerId}.group-by:off`,
+        `pa-hub.views.${this.providerId}.group-by:off`,
         () => {
           this.groupBy.update('off');
           this.refresh();

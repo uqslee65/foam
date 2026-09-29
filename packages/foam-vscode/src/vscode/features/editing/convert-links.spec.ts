@@ -28,7 +28,7 @@ describe('Link Conversion Commands', () => {
     await closeEditors();
   });
 
-  describe('foam-vscode.convert-wikilink-to-markdown', () => {
+  describe('pa-hub.convert-wikilink-to-markdown', () => {
     it('should convert wikilink to markdown link', async () => {
       const noteA = await createFile('# Note A', ['note-a.md']);
       const { uri } = await createFile('Text before [[note-a]] text after');
@@ -128,7 +128,7 @@ describe('Link Conversion Commands', () => {
     });
   });
 
-  describe('foam-vscode.convert-markdown-to-wikilink', () => {
+  describe('pa-hub.convert-markdown-to-wikilink', () => {
     it('should convert markdown link to wikilink', async () => {
       const noteA = await createFile('# Note A', ['note-a.md']);
       const { uri } = await createFile(

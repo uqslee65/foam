@@ -1,0 +1,23 @@
+{
+  "packet": "/private/tmp/claude-501/-Users-slee65-projects/b13e7000-3cd3-4693-a841-2e852457105c/scratchpad/N12c_packet.md",
+  "class": "B",
+  "write_capable": true,
+  "errors": 2,
+  "warnings": 0,
+  "findings": [
+    {
+      "check": "vague-verbs",
+      "severity": "error",
+      "tag": null,
+      "line": 165,
+      "message": "vague phrase 'etc.' found -- Class B forbids judgment calls"
+    },
+    {
+      "check": "vague-verbs",
+      "severity": "error",
+      "tag": null,
+      "line": 165,
+      "message": "vague phrase 'etc.' found -- Class B forbids judgment calls"
+    }
+  ]
+}

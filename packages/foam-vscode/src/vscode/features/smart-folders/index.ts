@@ -35,7 +35,7 @@ export default async function activate(
     () => vscode.workspace.isTrusted
   );
 
-  const treeView = vscode.window.createTreeView('foam-vscode.smart-folders', {
+  const treeView = vscode.window.createTreeView('pa-hub.smart-folders', {
     treeDataProvider: provider,
     showCollapseAll: true,
   });
@@ -51,11 +51,11 @@ export default async function activate(
     foam.graph.onDidUpdate(refresh),
     vscode.workspace.onDidGrantWorkspaceTrust(refresh),
     vscode.commands.registerCommand(
-      'foam-vscode.views.smart-folders.create',
+      'pa-hub.views.smart-folders.create',
       () => createSmartFolder(storage, foam.tags)
     ),
     vscode.commands.registerCommand(
-      'foam-vscode.views.smart-folders.edit',
+      'pa-hub.views.smart-folders.edit',
       async (item?: SmartFolderTreeItem | SmartFolderErrorTreeItem) => {
         const target =
           item?.loaded?.uri ??
@@ -66,7 +66,7 @@ export default async function activate(
       }
     ),
     vscode.commands.registerCommand(
-      'foam-vscode.views.smart-folders.delete',
+      'pa-hub.views.smart-folders.delete',
       async (item?: SmartFolderTreeItem | SmartFolderErrorTreeItem) => {
         if (!item) return;
         await deleteSmartFolder(
@@ -77,7 +77,7 @@ export default async function activate(
       }
     ),
     vscode.commands.registerCommand(
-      'foam-vscode.views.smart-folders.refresh',
+      'pa-hub.views.smart-folders.refresh',
       refresh
     )
   );

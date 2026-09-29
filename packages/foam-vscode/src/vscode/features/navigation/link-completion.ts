@@ -16,7 +16,7 @@ export const linkCommitCharacters = ['#', '|'];
 export const sectionCommitCharacters = ['|'];
 
 const COMPLETION_CURSOR_MOVE = {
-  command: 'foam-vscode.completion-move-cursor',
+  command: 'pa-hub.completion-move-cursor',
   title: 'Foam: Move cursor after completion',
 };
 

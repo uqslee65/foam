@@ -1,0 +1,149 @@
+:root {
+  --board-border: var(--vscode-panel-border, #d0d7de);
+  --board-foreground: var(--vscode-foreground, #24292f);
+  --board-muted: var(--vscode-descriptionForeground, #57606a);
+  --board-surface: var(--vscode-editorWidget-background, #ffffff);
+  --board-hover: var(--vscode-list-hoverBackground, #f6f8fa);
+  --board-accent: var(--vscode-textLink-foreground, #0969da);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 16px;
+  color: var(--board-foreground);
+  background: var(--vscode-editor-background, #ffffff);
+  font-family: var(--vscode-font-family, sans-serif);
+  font-size: var(--vscode-font-size, 13px);
+}
+
+.board-root {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+h2,
+h3 {
+  margin: 0 0 10px;
+}
+
+h2 {
+  font-size: 1.2rem;
+}
+
+h3 {
+  font-size: 0.95rem;
+}
+
+.eisenhower-matrix {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.eisenhower-cell,
+.kanban-column,
+.unassigned-section {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--board-border);
+  border-radius: 6px;
+  background: var(--board-surface);
+}
+
+.eisenhower-cell {
+  min-height: 140px;
+}
+
+.eisenhower-cell h3,
+.unassigned-section h3,
+.kanban-column h3 {
+  color: var(--board-accent);
+}
+
+.unassigned-section {
+  margin-top: 12px;
+}
+
+.task-list,
+.kanban-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.task-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--board-border);
+  border-radius: 4px;
+  background: var(--vscode-textCodeBlock-background, transparent);
+}
+
+.task-card:hover {
+  background: var(--board-hover);
+}
+
+.task-card input {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  accent-color: var(--board-accent);
+}
+
+.task-text {
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+.task-card.checked .task-text {
+  opacity: 0.6;
+  text-decoration: line-through;
+}
+
+.quadrant-badge {
+  flex: 0 0 auto;
+  padding: 2px 6px;
+  border: 1px solid var(--board-border);
+  border-radius: 10px;
+  color: var(--board-muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.kanban-board {
+  display: flex;
+  gap: 12px;
+}
+
+.kanban-column {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --board-border: var(--vscode-panel-border, #454545);
+    --board-surface: var(--vscode-editorWidget-background, #252526);
+    --board-hover: var(--vscode-list-hoverBackground, #2a2d2e);
+  }
+}
+
+@media (max-width: 700px) {
+  .eisenhower-matrix {
+    grid-template-columns: 1fr;
+  }
+
+  .kanban-board {
+    flex-direction: column;
+  }
+}

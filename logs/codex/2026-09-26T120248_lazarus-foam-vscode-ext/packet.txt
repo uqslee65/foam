@@ -1,0 +1,135 @@
+<task>
+Task slug: lazarus-foam-vscode-ext
+Plan ref: N12
+Shard: focus file watcher (014b, sub-shard 2/3 of N12 focus)
+Depends: 014a (focus parse + queue CLOSED)
+
+Action: Add watchFocusFile to the existing focus.ts module. This function watches a directory for changes to a focus file, reads the file, parses it with parseFocusFilePayload, and calls a callback. Uses an injected FocusFs interface (no direct Node fs import). Handles error re-attach, unref'd timers, atomic replace detection, and startup read-and-suppress.
+
+Done when: watchFocusFile exported from focus.ts, FocusFs interface defined, watcher tests pass, tsc clean, all existing tests still pass.
+
+Worker model: gpt-5.6-luna
+Worker effort: xhigh
+</task>
+
+<plan_first>
+Before editing anything, output a numbered plan of exactly which changes you will make in which file, then execute the plan in the same turn.
+</plan_first>
+
+<exact_io_contract>
+This section is a specification, not a suggestion. Implement it literally.
+Repo root: /Users/slee65/projects/lazarus-foam-ext
+
+Owns (exactly these 2 files — modify both, touch nothing else):
+1. packages/foam-vscode/src/pa-hub/focus.ts (MODIFY — add watchFocusFile + FocusFs)
+2. packages/foam-vscode/src/pa-hub/tests/test_focus.test.ts (MODIFY — add watcher tests)
+
+Read BEFORE editing:
+- packages/foam-vscode/src/pa-hub/focus.ts (current state from 014a — parseFocusFilePayload + FocusQueue)
+- packages/foam-vscode/src/pa-hub/tests/test_focus.test.ts (current state from 014a — 12 tests)
+
+=== focus.ts ADDITIONS (additive only, do not modify existing code) ===
+
+IMPORTANT: focus.ts must remain pure — NO direct Node.js imports (no 'fs', no 'path', no 'events'). All filesystem operations go through the injected FocusFs interface.
+
+--- FocusFs interface ---
+
+```typescript
+export interface FocusFs {
+  readFile(path: string): Promise<string | null>;
+  watchDir(
+    dir: string,
+    onChange: () => void,
+    onError: (err: unknown) => void
+  ): { close(): void };
+}
+```
+
+- `readFile`: reads file contents as string, returns null if file missing or unreadable
+- `watchDir`: watches a directory for changes, calls onChange on any change, onError on watcher error. Returns a handle with close().
+
+--- watchFocusFile ---
+
+```typescript
+export interface WatchFocusFileOptions {
+  dir: string;
+  filename: string;
+  fs: FocusFs;
+  workspaceId: string;
+  onRequest: (request: FocusRequest) => void;
+}
+
+export function watchFocusFile(
+  options: WatchFocusFileOptions
+): { dispose(): void }
+```
+
+Behavior:
+1. On creation, read the file at `${dir}/${filename}`. If it exists and parses successfully, call `markSeen(request.requestId)` on an internal seen-set (do NOT fire onRequest — this is startup suppression). The internal seen-set is a simple Set<string> or array, separate from FocusQueue.
+2. Start watching the directory via `fs.watchDir(dir, onChange, onError)`.
+3. On change: read the file, parse with parseFocusFilePayload(parsed, {workspaceId}). If ok and requestId not in the seen-set, fire onRequest(request) and add requestId to seen-set.
+4. On error: close the current watcher and re-attach after a delay. Use a timer reference (the timer should be unreferenced so it doesn't keep the process alive — note this in a comment since the caller is responsible for unref'ing in the vscode layer).
+5. On dispose: close the watcher, clear any pending re-attach timer.
+6. The re-attach delay should be configurable or defaulted (e.g. 1000ms).
+7. Guard against double-fire from rapid fs events: use a debounce or a simple "reading" flag so concurrent change events don't trigger multiple reads.
+
+Implementation notes:
+- Keep the seen-set unbounded for now — the file watcher lifetime matches the extension lifecycle, so it won't grow indefinitely.
+- Parse the file content as JSON. If JSON.parse throws, silently ignore (corrupted/partial write).
+- The path join `${dir}/${filename}` is simple string concatenation — no Node path module needed.
+
+=== test_focus.test.ts ADDITIONS ===
+
+Add tests with prefix test_focus_watch_. At least 4 new tests:
+
+1. test_focus_watch_startup_suppress — create watcher with existing file content, verify onRequest NOT called for the existing requestId
+2. test_focus_watch_new_request — simulate onChange, readFile returns new payload, verify onRequest called
+3. test_focus_watch_duplicate_suppress — simulate onChange twice with same requestId, verify onRequest called only once
+4. test_focus_watch_dispose — dispose watcher, verify close called on the fs watcher handle
+
+For tests, create a mock FocusFs:
+```typescript
+function mockFs(content: string | null): FocusFs & { triggerChange: () => void; triggerError: (err: unknown) => void } {
+  let onChange: (() => void) | undefined;
+  let onError: ((err: unknown) => void) | undefined;
+  return {
+    readFile: async () => content,
+    watchDir: (dir, onC, onE) => {
+      onChange = onC;
+      onError = onE;
+      return { close: vi.fn() };
+    },
+    triggerChange: () => onChange?.(),
+    triggerError: (err) => onError?.(err),
+  };
+}
+```
+
+All existing 12 tests must continue to pass unchanged.
+</exact_io_contract>
+
+<acceptance_checks>
+python3 /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N12b_1.py
+bash /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N12b_2.sh
+</acceptance_checks>
+
+<forbidden_actions>
+Do not edit any file outside the 2 owns paths listed above.
+Do not modify open-node.ts, privacy.ts, privacy-index.ts, roots.ts, graph-data.ts, protocol.ts, extension.ts, index.ts.
+Do not run yarn install, yarn build, yarn compile, or any network command.
+Do not run tsc WITHOUT --noEmit.
+Do not launch code-insiders.
+Do not add new dependencies.
+Do not import from 'fs', 'path', 'os', 'events', or any Node built-in in focus.ts.
+Do not import from 'vscode' in focus.ts.
+Do not modify the existing parseFocusFilePayload function or FocusQueue class (additive only).
+</forbidden_actions>
+
+<gates_ledger>
+logs/pdca/gates/lazarus-foam-vscode-ext/GATES.md
+</gates_ledger>
+
+<compact_output_contract>
+Lead with DONE or BLOCKED, then files changed, then checks run.
+Do not add extra prose.
+</compact_output_contract>

@@ -1,0 +1,21 @@
+# PRE-DISPATCH
+
+$ python3 /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N07_1.py
+exit: 1
+--- stdout ---
+FAIL k_N07_1 roots.ts missing at /Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/pa-hub/roots.ts
+FAIL k_N07_1 graph-data.ts missing at /Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/pa-hub/graph-data.ts
+FAIL k_N07_1 roots.test.ts missing at /Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/pa-hub/roots.test.ts
+--- stderr ---
+
+
+$ bash /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N07_2.sh
+exit: 1
+--- stdout ---
+JSON report written to /tmp/pa_hub_gate_n07_vitest.json
+FAIL k_N07_2 vitest pass=0 fail=0 (need >=14/0)
+JSON report written to /tmp/pa_hub_gate_n07_privacy_vitest.json
+FAIL k_N07_2 total_failures=1
+--- stderr ---
+
+

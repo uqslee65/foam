@@ -6,7 +6,7 @@ import { FoamWorkspace } from '@foam/core';
 import { FoamEmbeddings } from '../../../ai/model/embeddings';
 
 export const BUILD_EMBEDDINGS_COMMAND = {
-  command: 'foam-vscode.build-embeddings',
+  command: 'pa-hub.build-embeddings',
   title: 'Foam: Analyze Notes with AI',
 };
 

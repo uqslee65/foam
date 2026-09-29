@@ -1,0 +1,131 @@
+--- /Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/pa-hub/tests/test_graph_view.test.ts (before)
++++ /Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/pa-hub/tests/test_graph_view.test.ts (after)
+@@ -8,6 +8,7 @@
+ };
+ import { resolveNodeOpen } from '../open-node';
+ import { createPrivacyPolicy } from '../privacy';
++// Provider focus wiring is integration-level; these tests stay on pure helpers.
+ import {
+   cutTitle,
+   getGraphStyle,
+--- /Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/vscode/features/graph-webview/index.ts (before)
++++ /Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/vscode/features/graph-webview/index.ts (after)
+@@ -1,4 +1,9 @@
+ import * as vscode from 'vscode';
++// Native directory events are required for the PA Hub focus-file watcher.
++// eslint-disable-next-line no-restricted-imports
++import { watch as fsWatch } from 'fs';
++import { readFile as fsReadFile } from 'fs/promises';
++import { homedir } from 'os';
+ import { Foam, URI } from '@foam/core';
+ import { Logger } from '@foam/core';
+ import { fromVsCodeUri, toVsCodeUri } from '../../utils/vsc-utils';
+@@ -6,8 +11,10 @@
+ import { getFoamVsCodeConfig } from '../../config';
+ import { getActiveTabUri, onDidChangeActiveTab } from '../../services/editor';
+ import { buildRootQualifiedGraphData } from '../../../pa-hub/graph-data';
++import { FocusQueue, watchFocusFile } from '../../../pa-hub/focus';
+ import { resolveNodeOpen } from '../../../pa-hub/open-node';
+ import { createPrivacyPolicy } from '../../../pa-hub/privacy';
++import type { FocusFs } from '../../../pa-hub/focus';
+ import type { PrivacyPolicy } from '../../../pa-hub/privacy';
+ import {
+   buildCsp,
+@@ -19,6 +26,7 @@
+   GraphViewConfig,
+   ShowGraphArgs,
+ } from '@foam/graph-view/protocol' with { 'resolution-mode': 'import' };
++import type { FocusRequest } from '@foam/graph-view/protocol' with { 'resolution-mode': 'import' };
+ import type { NodeId } from '@foam/graph-view/protocol' with {
+   'resolution-mode': 'import',
+ };
+@@ -34,7 +42,8 @@
+ 
+   constructor(
+     private readonly context: vscode.ExtensionContext,
+-    private readonly foamPromise: Promise<Foam>
++    private readonly foamPromise: Promise<Foam>,
++    private readonly focusQueue: FocusQueue
+   ) {}
+ 
+   async resolveWebviewView(
+@@ -131,10 +140,21 @@
+             break;
+           }
+           case 'webviewDidBecomeReady': {
++            this.focusQueue.markReady();
++            for (const request of this.focusQueue.drain()) {
++              webviewView.webview.postMessage({
++                type: 'didRequestFocus',
++                payload: request,
++              });
++            }
+             break;
+           }
+           case 'error': {
+             Logger.error('An error occurred in the graph view', message.payload);
++            break;
++          }
++          case 'webviewDidFocusNode': {
++            Logger.info('Focus result', message.payload);
+             break;
+           }
+         }
+@@ -157,6 +177,7 @@
+     webviewView.onDidDispose(() => {
+       noteUpdatedListener.dispose();
+       editorListener.dispose();
++      this.focusQueue.markNotReady();
+       if (this.webviewView === webviewView) {
+         this.webviewView = undefined;
+       }
+@@ -196,7 +217,8 @@
+   context: vscode.ExtensionContext,
+   foamPromise: Promise<Foam>
+ ) {
+-  const provider = new GraphWebviewProvider(context, foamPromise);
++  const focusQueue = new FocusQueue();
++  const provider = new GraphWebviewProvider(context, foamPromise, focusQueue);
+   context.subscriptions.push(
+     vscode.workspace.onDidChangeConfiguration(event => {
+       if (event.affectsConfiguration('pa-hub.graph.style')) {
+@@ -214,6 +236,39 @@
+       () => vscode.commands.executeCommand('pa-hub.graph.focus')
+     )
+   );
++
++  const focusDir = `${homedir()}/.claude/state`;
++  const focusFilename = 'pa-hub-focus.json';
++  const workspaceId = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
++
++  const focusFs: FocusFs = {
++    async readFile(filePath: string): Promise<string | null> {
++      try {
++        return await fsReadFile(filePath, 'utf-8');
++      } catch {
++        return null;
++      }
++    },
++    watchDir(
++      dir: string,
++      onChange: () => void,
++      onError: (err: unknown) => void
++    ): { close(): void } {
++      const watcher = fsWatch(dir, { persistent: false }, () => onChange());
++      watcher.on('error', onError);
++      return { close: () => watcher.close() };
++    },
++  };
++
++  const focusWatcher = watchFocusFile({
++    dir: focusDir,
++    filename: focusFilename,
++    fs: focusFs,
++    workspaceId,
++    onRequest: (request: FocusRequest) => focusQueue.enqueue(request),
++  });
++
++  context.subscriptions.push({ dispose: () => focusWatcher.dispose() });
+ }
+ 
+ export function cutTitle(title: string, maxLen: number): string {

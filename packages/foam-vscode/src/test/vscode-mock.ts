@@ -1338,13 +1338,7 @@ class MockFileSystem implements FileSystem {
     // and VS Code reports it only through the file watcher.
 
     if (options?.recursive) {
-      // Use rmdir with recursive option for older Node.js versions
-      try {
-        await fs.promises.rmdir(uri.fsPath, { recursive: true });
-      } catch {
-        // Fallback for very old Node.js versions
-        await fs.promises.unlink(uri.fsPath);
-      }
+      await fs.promises.rm(uri.fsPath, { recursive: true, force: true });
     } else {
       await fs.promises.unlink(uri.fsPath);
     }
@@ -1562,7 +1556,7 @@ export function createMockExtensionContext(): ExtensionContext {
     logPath: '/mock/logs',
     extensionMode: 1,
     extension: {
-      id: 'foam.foam-vscode',
+      id: 'lazarus.pa-hub',
       packageJSON: {},
     },
     languageModelAccessInformation: {
@@ -2435,7 +2429,7 @@ export const languages = {
 // Extensions namespace
 export const extensions = {
   getExtension<T = any>(extensionId: string): Extension<T> | undefined {
-    if (extensionId === 'foam.foam-vscode') {
+    if (extensionId === 'lazarus.pa-hub') {
       return new MockExtension<any>(
         extensionId,
         {
@@ -2451,7 +2445,7 @@ export const extensions = {
 
   get all(): Extension<any>[] {
     const foamExtension = new MockExtension<any>(
-      'foam.foam-vscode',
+      'lazarus.pa-hub',
       {
         get foam() {
           return TestFoam.getInstance();

@@ -8,8 +8,8 @@ export default async function activate(
   foamPromise: Promise<Foam>
 ) {
   context.subscriptions.push(
-    commands.registerCommand('foam-vscode.open-random-note', async () => {
-      getTelemetry()?.trackCommand('foam-vscode.open-random-note');
+    commands.registerCommand('pa-hub.open-random-note', async () => {
+      getTelemetry()?.trackCommand('pa-hub.open-random-note');
       const foam = await foamPromise;
       const currentFile = getActiveTabUri(foam.workspace)?.path;
       const notes = foam.workspace.list().filter(r => r.uri.isMarkdown());

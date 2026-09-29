@@ -5,7 +5,6 @@ import navigation from './navigation';
 import notes from './notes';
 import tags from './tags';
 import preview from './preview';
-import graphWebview from './graph-webview';
 import lint from './lint';
 import ai from './ai';
 import smartFolders from './smart-folders';
@@ -21,7 +20,6 @@ export const features: FoamFeature[] = [
   tags,
   smartFolders,
   preview,
-  graphWebview,
   lint,
   ai,
   exportHtmlPage,

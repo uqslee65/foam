@@ -27,7 +27,7 @@ export default async function activate(
 ) {
   const foam = await foamPromise;
   const provider = new ConnectionsTreeDataProvider(foam.workspace, foam.graph, context.globalState);
-  const treeView = vscode.window.createTreeView('foam-vscode.connections', {
+  const treeView = vscode.window.createTreeView('pa-hub.connections', {
     treeDataProvider: provider,
     showCollapseAll: true,
   });
@@ -79,39 +79,39 @@ export class ConnectionsTreeDataProvider extends BaseTreeProvider<vscode.TreeIte
     super();
     this.show = new ContextMemento<'all links' | 'backlinks' | 'forward links'>(
       this.state,
-      `foam-vscode.views.connections.show`,
+      `pa-hub.views.connections.show`,
       'all links'
     );
     this.include = new ContextMemento<'notes-only' | 'all'>(
       this.state,
-      `foam-vscode.views.connections.include`,
+      `pa-hub.views.connections.include`,
       'all'
     );
     if (!registerCommands) {
       return;
     }
     this.disposables.push(
-      vscode.commands.registerCommand(`foam-vscode.views.connections.show:all-links`, () => {
+      vscode.commands.registerCommand(`pa-hub.views.connections.show:all-links`, () => {
         this.show.update('all links');
         this.refresh();
       }),
-      vscode.commands.registerCommand(`foam-vscode.views.connections.show:backlinks`, () => {
+      vscode.commands.registerCommand(`pa-hub.views.connections.show:backlinks`, () => {
         this.show.update('backlinks');
         this.refresh();
       }),
-      vscode.commands.registerCommand(`foam-vscode.views.connections.show:forward-links`, () => {
+      vscode.commands.registerCommand(`pa-hub.views.connections.show:forward-links`, () => {
         this.show.update('forward links');
         this.refresh();
       }),
       vscode.commands.registerCommand(
-        `foam-vscode.views.connections.include:notes-only`,
+        `pa-hub.views.connections.include:notes-only`,
         () => {
           this.include.update('notes-only');
           this.refresh();
         }
       ),
       vscode.commands.registerCommand(
-        `foam-vscode.views.connections.include:all`,
+        `pa-hub.views.connections.include:all`,
         () => {
           this.include.update('all');
           this.refresh();

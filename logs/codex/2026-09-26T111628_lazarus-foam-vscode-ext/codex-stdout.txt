@@ -1,0 +1,11 @@
+# CLAIM — Codex self-report. Evidence only, never verdict.
+DONE
+
+Files changed:
+- `packages/foam-vscode/src/vscode/features/graph-webview/index.ts`
+- `packages/foam-vscode/src/pa-hub/tests/test_graph_view.test.ts`
+
+Checks:
+- `k_N11b_1`: PASS
+- `k_N11b_2`: PASS
+- TypeScript, tests, oxlint: PASS

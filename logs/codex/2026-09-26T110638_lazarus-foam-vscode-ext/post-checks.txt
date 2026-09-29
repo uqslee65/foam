@@ -1,0 +1,17 @@
+# EVIDENCE — host-executed. This is the verdict.
+
+$ python3 /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N11a_1.py
+exit: 0
+--- stdout ---
+PASS k_N11a_1 mod=ok tst=6 tsc=0
+--- stderr ---
+
+
+$ bash /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N11a_2.sh
+exit: 0
+--- stdout ---
+JSON report written to /tmp/pa_hub_gate_n11a_vitest.json
+PASS k_N11a_2 vitest=6 tsc=0 oxlint=0 regressions=ok
+--- stderr ---
+
+

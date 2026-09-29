@@ -7,9 +7,9 @@ describe('vscode-mock extensions API', () => {
   });
 
   it('should return foam extension', () => {
-    const ext = vscode.extensions.getExtension('foam.foam-vscode');
+    const ext = vscode.extensions.getExtension('lazarus.pa-hub');
     expect(ext).toBeDefined();
-    expect(ext?.id).toBe('foam.foam-vscode');
+    expect(ext?.id).toBe('lazarus.pa-hub');
     expect(ext?.isActive).toBe(true);
   });
 
@@ -19,7 +19,7 @@ describe('vscode-mock extensions API', () => {
   });
 
   it('should provide foam instance through extension exports', async () => {
-    const ext = vscode.extensions.getExtension('foam.foam-vscode');
+    const ext = vscode.extensions.getExtension('lazarus.pa-hub');
     expect(ext?.exports).toBeDefined();
     expect(ext?.exports.foam).toBeDefined();
 
@@ -31,7 +31,7 @@ describe('vscode-mock extensions API', () => {
   });
 
   it('should support activate() method', async () => {
-    const ext = vscode.extensions.getExtension('foam.foam-vscode');
+    const ext = vscode.extensions.getExtension('lazarus.pa-hub');
     expect(ext?.activate).toBeDefined();
 
     const exports = await ext?.activate();

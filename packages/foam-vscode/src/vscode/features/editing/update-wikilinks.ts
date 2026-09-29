@@ -31,7 +31,7 @@ export default async function activate(
   const foam = await foamPromise;
 
   context.subscriptions.push(
-    commands.registerCommand('foam-vscode.update-wikilink-definitions', () => {
+    commands.registerCommand('pa-hub.update-wikilink-definitions', () => {
       return updateWikilinkDefinitions(
         foam.workspace,
         foam.services.parser,
@@ -62,7 +62,7 @@ export function getWikilinkDefinitionSetting():
   | 'withoutExtensions'
   | 'off' {
   return workspace
-    .getConfiguration('foam.edit')
+    .getConfiguration('pa-hub.edit')
     .get('linkReferenceDefinitions', 'withoutExtensions');
 }
 
@@ -172,7 +172,7 @@ class WikilinkReferenceCodeLensProvider implements CodeLensProvider {
     return [
       new CodeLens(range, {
         command:
-          update == null ? '' : 'foam-vscode.update-wikilink-definitions',
+          update == null ? '' : 'pa-hub.update-wikilink-definitions',
         title: `Wikilink definitions (${status})`,
         arguments: [],
       }),

@@ -1,0 +1,204 @@
+--- /Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/pa-hub/tests/test_graph_view.test.ts (before)
++++ /Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/pa-hub/tests/test_graph_view.test.ts (after)
+@@ -83,15 +83,11 @@
+   });
+ 
+   it('test_graph_view_cut_title_truncates', async () => {
+-    await vscode.workspace.getConfiguration().update('pa-hub.graph.titleMaxLength', 5);
+-
+-    expect(cutTitle('Long title')).toBe('Long ...');
++    expect(cutTitle('Long title', 5)).toBe('Long ...');
+   });
+ 
+   it('test_graph_view_cut_title_short_passthrough', async () => {
+-    await vscode.workspace.getConfiguration().update('pa-hub.graph.titleMaxLength', 20);
+-
+-    expect(cutTitle('Short title')).toBe('Short title');
++    expect(cutTitle('Short title', 20)).toBe('Short title');
+   });
+ 
+   it('test_graph_view_resolve_view_no_args', () => {
+@@ -106,4 +102,16 @@
+       handleActiveResourceChange(undefined, {} as any, URI.file('/note.md'))
+     ).not.toThrow();
+   });
++
++  it('test_graph_view_cut_title_parameterized', () => {
++    expect(cutTitle('long title here', 5)).toBe('long ...');
++  });
++
++  it('test_graph_view_cut_title_zero_maxlen', () => {
++    expect(cutTitle('any', 0)).toBe('any');
++  });
++
++  it('test_graph_view_cut_title_negative_maxlen', () => {
++    expect(cutTitle('any', -1)).toBe('any');
++  });
+ });
+--- /Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/vscode/features/graph-webview/index.ts (before)
++++ /Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/vscode/features/graph-webview/index.ts (after)
+@@ -1,11 +1,11 @@
+ import * as vscode from 'vscode';
+ import { Foam, URI } from '@foam/core';
+ import { Logger } from '@foam/core';
+-import { fromVsCodeUri } from '../../utils/vsc-utils';
++import { fromVsCodeUri, toVsCodeUri } from '../../utils/vsc-utils';
+ import { isSome } from '@foam/core';
+ import { getFoamVsCodeConfig } from '../../config';
+ import { getActiveTabUri, onDidChangeActiveTab } from '../../services/editor';
+-import { buildGraphData } from '@foam/core';
++import { buildRootQualifiedGraphData } from '../../../pa-hub/graph-data';
+ import {
+   buildCsp,
+   fillGraphHtml,
+@@ -16,6 +16,9 @@
+   GraphViewConfig,
+   ShowGraphArgs,
+ } from '@foam/graph-view/protocol' with { 'resolution-mode': 'import' };
++import type { NodeId } from '@foam/graph-view/protocol' with {
++  'resolution-mode': 'import',
++};
+ 
+ interface GraphWebviewHost {
+   webview: vscode.Webview;
+@@ -23,6 +26,7 @@
+ 
+ class GraphWebviewProvider implements vscode.WebviewViewProvider {
+   private webviewView: vscode.WebviewView | undefined;
++  private idToUri: Map<NodeId, URI> = new Map();
+ 
+   constructor(
+     private readonly context: vscode.ExtensionContext,
+@@ -77,12 +81,17 @@
+               payload: style,
+             });
+ 
+-            updateGraph(webviewView, foam);
++            this.updateGraph(webviewView, foam);
+             break;
+           }
+           case 'webviewDidSelectNode': {
+-            const noteUri = vscode.Uri.parse(message.payload);
+-            const selectedNote = foam.workspace.get(fromVsCodeUri(noteUri));
++            const resolvedUri = this.idToUri.get(message.payload as NodeId);
++            if (!resolvedUri) {
++              break;
++            }
++
++            const noteUri = toVsCodeUri(resolvedUri);
++            const selectedNote = foam.workspace.get(resolvedUri);
+ 
+             if (isSome(selectedNote)) {
+               const navigateToPreview = getFoamVsCodeConfig(
+@@ -90,7 +99,7 @@
+                 false
+               );
+               const command = getNodeNavigationCommand(
+-                noteUri.path,
++                resolvedUri.path,
+                 navigateToPreview
+               );
+               if (command === 'markdown.showPreview') {
+@@ -119,13 +128,14 @@
+     );
+ 
+     const noteUpdatedListener = foam.graph.onDidUpdate(() => {
+-      updateGraph(webviewView, foam);
++      this.updateGraph(webviewView, foam);
+     });
+     const editorListener = onDidChangeActiveTab(() => {
+       handleActiveResourceChange(
+         webviewView,
+         foam,
+-        getActiveTabUri(foam.workspace)
++        getActiveTabUri(foam.workspace),
++        this.idToUri
+       );
+     });
+     webviewView.onDidDispose(() => {
+@@ -141,6 +151,27 @@
+     this.webviewView?.webview.postMessage({
+       type: 'didUpdateStyle',
+       payload: style,
++    });
++  }
++
++  private updateGraph(webviewHost: GraphWebviewHost, foam: Foam): void {
++    const { graphData, idToUri } = buildRootQualifiedGraphData(
++      foam.workspace.list(),
++      foam.graph.getAllConnections(),
++      vscode.workspace.workspaceFolders?.map(folder => fromVsCodeUri(folder.uri)) ?? []
++    );
++    this.idToUri = idToUri;
++
++    const maxLen = vscode.workspace
++      .getConfiguration('pa-hub.graph')
++      .get<number>('titleMaxLength', 24);
++    for (const node of Object.values(graphData.nodeInfo)) {
++      node.title = cutTitle(node.title, maxLen);
++    }
++
++    webviewHost.webview.postMessage({
++      type: 'didUpdateGraphData',
++      payload: graphData,
+     });
+   }
+ }
+@@ -169,26 +200,7 @@
+   );
+ }
+ 
+-function updateGraph(webviewHost: GraphWebviewHost, foam: Foam) {
+-  const graph = generateGraphData(foam);
+-  webviewHost.webview.postMessage({
+-    type: 'didUpdateGraphData',
+-    payload: graph,
+-  });
+-}
+-
+-function generateGraphData(foam: Foam) {
+-  return buildGraphData(foam.workspace.list(), foam.graph.getAllConnections(), {
+-    resourceToId: uri => uri.path,
+-    transformTitle: title => cutTitle(title),
+-    includePlaceholders: true,
+-  });
+-}
+-
+-export function cutTitle(title: string): string {
+-  const maxLen = vscode.workspace
+-    .getConfiguration('pa-hub.graph')
+-    .get('titleMaxLength', 24);
++export function cutTitle(title: string, maxLen: number): string {
+   if (maxLen > 0 && title.length > maxLen) {
+     return title.substring(0, maxLen).concat('...');
+   }
+@@ -275,14 +287,27 @@
+ export function handleActiveResourceChange(
+   webviewHost: GraphWebviewHost | undefined,
+   foam: Foam,
+-  uri: URI | undefined
++  uri: URI | undefined,
++  idToUri: Map<NodeId, URI> = new Map()
+ ) {
+   if (webviewHost && uri && uri.scheme !== 'untitled') {
+     const note = foam.workspace.find(uri);
+     if (isSome(note)) {
++      let nodeId: NodeId | undefined;
++      for (const [id, resourceUri] of idToUri) {
++        if (resourceUri.isEqual(uri)) {
++          nodeId = id;
++          break;
++        }
++      }
++
++      if (!nodeId) {
++        return;
++      }
++
+       webviewHost.webview.postMessage({
+         type: 'didSelectNote',
+-        payload: note.uri.path,
++        payload: nodeId,
+       });
+     }
+   }

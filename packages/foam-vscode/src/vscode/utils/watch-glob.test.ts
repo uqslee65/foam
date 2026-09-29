@@ -34,7 +34,7 @@ describe('buildWatchGlob', () => {
 
 describe('buildWorkspaceWatchGlob', () => {
   it('watches every extension the attachment provider supports (#1697)', () => {
-    // Images are attachments regardless of `foam.files.attachmentExtensions`:
+    // Images are attachments regardless of `pa-hub.files.attachmentExtensions`:
     // the provider hardcodes them, so the watcher must cover them too, or a
     // pasted image is invisible until the window is reloaded.
     const provider = new AttachmentResourceProvider(

@@ -20,7 +20,7 @@ export default async function activate(
     context.globalState
   );
 
-  const treeView = vscode.window.createTreeView('foam-vscode.related-notes', {
+  const treeView = vscode.window.createTreeView('pa-hub.related-notes', {
     treeDataProvider: provider,
     showCollapseAll: false,
   });
@@ -31,7 +31,7 @@ export default async function activate(
     // Update context for conditional viewsWelcome messages
     vscode.commands.executeCommand(
       'setContext',
-      'foam.relatedNotes.state',
+      'pa-hub.relatedNotes.state',
       provider.getState()
     );
   };

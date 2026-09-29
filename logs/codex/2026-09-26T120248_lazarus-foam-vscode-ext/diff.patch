@@ -1,0 +1,298 @@
+--- /Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/pa-hub/focus.ts (before)
++++ /Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/pa-hub/focus.ts (after)
+@@ -125,3 +125,143 @@
+     return this.queue.length;
+   }
+ }
++
++export interface FocusFs {
++  readFile(path: string): Promise<string | null>;
++  watchDir(
++    dir: string,
++    onChange: () => void,
++    onError: (err: unknown) => void
++  ): { close(): void };
++}
++
++export interface WatchFocusFileOptions {
++  dir: string;
++  filename: string;
++  fs: FocusFs;
++  workspaceId: string;
++  onRequest: (request: FocusRequest) => void;
++}
++
++const focusWatchReattachDelayMs = 1000;
++
++export function watchFocusFile(
++  options: WatchFocusFileOptions
++): { dispose(): void } {
++  const filePath = `${options.dir}/${options.filename}`;
++  const seen = new Set<string>();
++  let watcher: { close(): void } | undefined;
++  let reattachTimer: ReturnType<typeof setTimeout> | undefined;
++  let disposed = false;
++  let reading = false;
++
++  async function readRequest(startup: boolean): Promise<void> {
++    const content = await options.fs.readFile(filePath);
++    if (content === null) {
++      return;
++    }
++
++    let parsed: unknown;
++    try {
++      parsed = JSON.parse(content);
++    } catch {
++      return;
++    }
++
++    const result = parseFocusFilePayload(parsed, {
++      workspaceId: options.workspaceId,
++    });
++    if (!result.ok || disposed) {
++      return;
++    }
++
++    const { request } = result;
++    if (startup) {
++      seen.add(request.requestId);
++      return;
++    }
++
++    if (seen.has(request.requestId)) {
++      return;
++    }
++
++    seen.add(request.requestId);
++    options.onRequest(request);
++  }
++
++  function readOnChange(): void {
++    if (disposed || reading) {
++      return;
++    }
++
++    reading = true;
++    void readRequest(false)
++      .catch(() => undefined)
++      .finally(() => {
++        reading = false;
++      });
++  }
++
++  function scheduleReattach(): void {
++    if (disposed || reattachTimer !== undefined) {
++      return;
++    }
++
++    const timer = setTimeout(() => {
++      reattachTimer = undefined;
++      attachWatcher();
++    }, focusWatchReattachDelayMs);
++    reattachTimer = timer;
++
++    // Unref Node timers when available; the VS Code layer owns watcher disposal.
++    const unref = (timer as unknown as { unref?: () => void }).unref;
++    unref?.call(timer);
++  }
++
++  function handleWatcherError(_error: unknown): void {
++    if (disposed) {
++      return;
++    }
++
++    watcher?.close();
++    watcher = undefined;
++    scheduleReattach();
++  }
++
++  function attachWatcher(): void {
++    if (disposed) {
++      return;
++    }
++
++    try {
++      watcher = options.fs.watchDir(
++        options.dir,
++        readOnChange,
++        handleWatcherError
++      );
++    } catch (error) {
++      handleWatcherError(error);
++    }
++  }
++
++  attachWatcher();
++
++  reading = true;
++  void readRequest(true)
++    .catch(() => undefined)
++    .finally(() => {
++      reading = false;
++    });
++
++  return {
++    dispose(): void {
++      disposed = true;
++      watcher?.close();
++      watcher = undefined;
++      if (reattachTimer !== undefined) {
++        clearTimeout(reattachTimer);
++        reattachTimer = undefined;
++      }
++    },
++  };
++}
+--- /Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/pa-hub/tests/test_focus.test.ts (before)
++++ /Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/pa-hub/tests/test_focus.test.ts (after)
+@@ -1,11 +1,49 @@
+-import { describe, expect, it } from 'vitest';
++import { describe, expect, it, vi } from 'vitest';
+ import type { NodeId } from '@foam/graph-view/protocol' with { 'resolution-mode': 'import' };
+-import { FocusQueue, parseFocusFilePayload } from '../focus';
++import {
++  FocusQueue,
++  parseFocusFilePayload,
++  watchFocusFile,
++} from '../focus';
++import type { FocusFs } from '../focus';
+ 
+ const nodeId = 'vault:test-node' as NodeId;
+ 
+ function request(requestId: string) {
+   return { requestId, nodeId };
++}
++
++function mockFs(
++  content: string | null
++): FocusFs & {
++  setContent: (nextContent: string | null) => void;
++  triggerChange: () => void;
++  triggerError: (err: unknown) => void;
++  close: ReturnType<typeof vi.fn>;
++} {
++  let currentContent = content;
++  let onChange: (() => void) | undefined;
++  let onError: ((err: unknown) => void) | undefined;
++  const close = vi.fn();
++  return {
++    readFile: async () => currentContent,
++    watchDir: (_dir, onC, onE) => {
++      onChange = onC;
++      onError = onE;
++      return { close };
++    },
++    setContent: nextContent => {
++      currentContent = nextContent;
++    },
++    triggerChange: () => onChange?.(),
++    triggerError: err => onError?.(err),
++    close,
++  };
++}
++
++async function flushFocusReads(): Promise<void> {
++  await Promise.resolve();
++  await Promise.resolve();
+ }
+ 
+ describe('focus', () => {
+@@ -132,4 +170,97 @@
+     queue.enqueue(request('request-1'));
+     expect(queue.drain()).toEqual([]);
+   });
++
++  it('test_focus_watch_startup_suppress', async () => {
++    const fs = mockFs(
++      JSON.stringify({
++        workspace: 'workspace-a',
++        requestId: 'request-1',
++        nodeId,
++      })
++    );
++    const onRequest = vi.fn();
++    const watcher = watchFocusFile({
++      dir: '/workspace',
++      filename: 'focus.json',
++      fs,
++      workspaceId: 'workspace-a',
++      onRequest,
++    });
++
++    await flushFocusReads();
++
++    expect(onRequest).not.toHaveBeenCalled();
++    watcher.dispose();
++  });
++
++  it('test_focus_watch_new_request', async () => {
++    const fs = mockFs(null);
++    const onRequest = vi.fn();
++    const watcher = watchFocusFile({
++      dir: '/workspace',
++      filename: 'focus.json',
++      fs,
++      workspaceId: 'workspace-a',
++      onRequest,
++    });
++    await flushFocusReads();
++
++    fs.setContent(
++      JSON.stringify({
++        workspace: 'workspace-a',
++        requestId: 'request-2',
++        nodeId,
++      })
++    );
++    fs.triggerChange();
++    await flushFocusReads();
++
++    expect(onRequest).toHaveBeenCalledOnce();
++    expect(onRequest).toHaveBeenCalledWith(request('request-2'));
++    watcher.dispose();
++  });
++
++  it('test_focus_watch_duplicate_suppress', async () => {
++    const fs = mockFs(null);
++    const onRequest = vi.fn();
++    const watcher = watchFocusFile({
++      dir: '/workspace',
++      filename: 'focus.json',
++      fs,
++      workspaceId: 'workspace-a',
++      onRequest,
++    });
++    await flushFocusReads();
++    fs.setContent(
++      JSON.stringify({
++        workspace: 'workspace-a',
++        requestId: 'request-3',
++        nodeId,
++      })
++    );
++
++    fs.triggerChange();
++    await flushFocusReads();
++    fs.triggerChange();
++    await flushFocusReads();
++
++    expect(onRequest).toHaveBeenCalledOnce();
++    watcher.dispose();
++  });
++
++  it('test_focus_watch_dispose', () => {
++    const fs = mockFs(null);
++    const watcher = watchFocusFile({
++      dir: '/workspace',
++      filename: 'focus.json',
++      fs,
++      workspaceId: 'workspace-a',
++      onRequest: vi.fn(),
++    });
++
++    watcher.dispose();
++
++    expect(fs.close).toHaveBeenCalledOnce();
++  });
+ });

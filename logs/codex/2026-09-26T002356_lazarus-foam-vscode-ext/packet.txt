@@ -1,0 +1,102 @@
+<task>
+Task slug: lazarus-foam-vscode-ext
+Plan ref: N10
+Shard: NodeId-wiring (012c, sub-shard 3/3 of N10 graph_view)
+Depends: 012b (provider-conversion CLOSED), N07 (roots/graph-data CLOSED)
+
+Action: Replace raw uri.path IDs with root-qualified NodeIds in both directions: graph data generation uses buildRootQualifiedGraphData, didSelectNote sends NodeId, webviewDidSelectNode resolves via idToUri map. Parameterize cutTitle.
+
+Done when: buildRootQualifiedGraphData wired, idToUri stored and refreshed on graph update, NodeId sent for didSelectNote, idToUri.get used for webviewDidSelectNode, cutTitle parameterized, all tests pass, tsc --noEmit clean.
+
+Worker model: gpt-5.6-luna
+Worker effort: xhigh
+</task>
+
+<plan_first>
+Before editing anything, output a numbered plan of exactly which changes you will make in which file, then execute the plan in the same turn.
+</plan_first>
+
+<exact_io_contract>
+This section is a specification, not a suggestion. Implement it literally.
+Repo root: /Users/slee65/projects/lazarus-foam-ext
+
+Owns (exactly these 2 files — modify both, touch nothing else):
+1. packages/foam-vscode/src/vscode/features/graph-webview/index.ts (MODIFY)
+2. packages/foam-vscode/src/pa-hub/tests/test_graph_view.test.ts (MODIFY — add tests)
+
+Read BEFORE editing:
+- packages/foam-vscode/src/pa-hub/graph-data.ts (buildRootQualifiedGraphData signature)
+- packages/foam-vscode/src/pa-hub/roots.ts (makeResourceNodeId, classifyRoots)
+- packages/foam-vscode/src/vscode/utils/vsc-utils.ts (fromVsCodeUri, toVsCodeUri)
+
+=== index.ts CHANGES (NodeId wiring) ===
+
+ADD imports:
+- `import { buildRootQualifiedGraphData } from '../../../pa-hub/graph-data';`
+- `import { toVsCodeUri, fromVsCodeUri } from '../../utils/vsc-utils';` (fromVsCodeUri may already be imported)
+- `import type { NodeId } from '@foam/graph-view/protocol' with { 'resolution-mode': 'import' };`
+
+REMOVE:
+- `import { buildGraphData } from '@foam/core';` (replaced by buildRootQualifiedGraphData)
+- The old `generateGraphData` function that calls buildGraphData with `resourceToId: uri => uri.path`
+
+ADD provider state:
+- `idToUri: Map<NodeId, URI>` stored on the provider (closure variable or class field)
+- Refreshed on every graph update (onDidUpdate callback rebuilds via buildRootQualifiedGraphData)
+
+REPLACE generateGraphData / updateGraph:
+- Call `buildRootQualifiedGraphData(foam.workspace.list(), foam.graph.getAllConnections(), vscode.workspace.workspaceFolders?.map(f => fromVsCodeUri(f.uri)) ?? [])` (fromVsCodeUri converts vscode.Uri to foam URI)
+- Store returned `idToUri` on the provider
+- Apply cutTitle post-hoc: iterate `graphData.nodeInfo` entries and truncate each `.title`
+- Post `didUpdateGraphData` with the built graphData
+
+PARAMETERIZE cutTitle:
+- Change signature to `export function cutTitle(title: string, maxLen: number): string`
+- Remove the vscode.workspace.getConfiguration call from inside cutTitle
+- Caller reads `pa-hub.graph.titleMaxLength` config and passes it as maxLen
+- Default maxLen from config: 24
+
+FIX handleActiveResourceChange:
+- Instead of sending `note.uri.path`, compute root-qualified NodeId:
+  1. Build reverse lookup from idToUri: `for (const [id, u] of idToUri) if (u.isEqual(uri)) return id`
+  2. If found, send `{ type: 'didSelectNote', payload: nodeId }`
+  3. If not found (resource outside all roots), do not send message
+
+FIX webviewDidSelectNode handler:
+- Replace `vscode.Uri.parse(message.payload)` with `idToUri.get(message.payload as NodeId)`
+- If idToUri returns undefined, ignore (node not in map)
+- Convert foam URI to vscode Uri via `toVsCodeUri(resolvedUri)` for executeCommand
+
+=== test_graph_view.test.ts CHANGES ===
+
+ADD these test cases (appended, all prefixed test_graph_view_):
+13. test_graph_view_cut_title_parameterized — cutTitle('long title here', 5) === 'long ...'
+14. test_graph_view_cut_title_zero_maxlen — cutTitle('any', 0) === 'any' (zero disables truncation)
+15. test_graph_view_cut_title_negative_maxlen — cutTitle('any', -1) === 'any' (negative disables)
+
+Note: do not test buildRootQualifiedGraphData wiring — that is already tested in roots.test.ts. Do not test idToUri map logic — that is integration-level.
+</exact_io_contract>
+
+<acceptance_checks>
+python3 /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N10c_1.py
+bash /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N10c_2.sh
+</acceptance_checks>
+
+<forbidden_actions>
+Do not edit any file outside the 2 owns paths listed above.
+Do not modify webview-security.ts, roots.ts, graph-data.ts, protocol.ts, main.ts, extension.ts.
+Do not run yarn install, yarn build, yarn compile, or any network command.
+Do not run tsc WITHOUT --noEmit.
+Do not launch code-insiders.
+Do not use parseWebviewMessage from protocol.ts.
+Do not add new dependencies or imports beyond what is specified above.
+</forbidden_actions>
+
+<gates_ledger>
+logs/pdca/gates/lazarus-foam-vscode-ext/GATES.md
+</gates_ledger>
+
+<compact_output_contract>
+Lead with DONE or BLOCKED, then files changed, then checks run.
+Do not add extra prose.
+</compact_output_contract>

@@ -3,6 +3,6 @@ import { createTemplate } from '../../../vscode/services/template-service';
 
 export default async function activate(context: ExtensionContext) {
   context.subscriptions.push(
-    commands.registerCommand('foam-vscode.create-new-template', createTemplate)
+    commands.registerCommand('pa-hub.create-new-template', createTemplate)
   );
 }

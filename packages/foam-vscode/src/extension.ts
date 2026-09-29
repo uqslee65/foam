@@ -1,11 +1,13 @@
 /*global markdownit:readonly*/
 
+import * as path from 'node:path';
+import * as os from 'node:os';
+import * as fs from 'node:fs';
 import {
   workspace,
   ExtensionContext,
   window,
   commands,
-  TextEditor,
   RelativePattern,
 } from 'vscode';
 import {
@@ -28,14 +30,11 @@ import { VsCodeWatcher } from './vscode/services/watcher';
 import { createMarkdownParser } from '@foam/core';
 import VsCodeBasedParserCache from './vscode/services/cache';
 import { createMatcherAndDataStore } from './vscode/services/editor';
+import { createPrivacyPolicy } from './pa-hub/privacy';
+import { withPrivacy } from './pa-hub/privacy-index';
+import { activatePaHub } from './pa-hub/activate';
 import { buildWorkspaceWatchGlob } from './vscode/utils/watch-glob';
 import { OllamaEmbeddingProvider } from './ai/providers/ollama/ollama-provider';
-import { initTelemetry } from './vscode/services/telemetry';
-
-// Injected by esbuild's `define` (and the vitest config), so telemetry can
-// attach version dimensions without a runtime package.json read
-declare const __FOAM_VSCODE_VERSION__: string;
-declare const __CORE_VERSION__: string;
 
 export async function activate(context: ExtensionContext) {
   const logger = new VsCodeOutputLogger();
@@ -44,27 +43,12 @@ export async function activate(context: ExtensionContext) {
 
   Config.setDefaultConfig(new VsCodeFoamConfig());
   try {
-    const telemetry = initTelemetry({
-      foamVersion: __FOAM_VSCODE_VERSION__,
-      coreVersion: __CORE_VERSION__,
-    });
-    context.subscriptions.push(telemetry);
-    telemetry.trackSession();
-
     Logger.info('Starting Foam');
 
     if (workspace.workspaceFolders === undefined) {
       Logger.info('No workspace open. Foam will not start');
       return;
     }
-
-    context.subscriptions.push(
-      window.onDidChangeActiveTextEditor((editor: TextEditor | undefined) => {
-        if (editor?.document.languageId === 'markdown') {
-          telemetry.trackNoteOpened();
-        }
-      })
-    );
 
     // Prepare Foam
     const includes = Config.getFilesInclude();
@@ -82,6 +66,16 @@ export async function activate(context: ExtensionContext) {
       Logger.info('  Include: ' + includePatterns.get(folder.name).join(','));
       Logger.info('  Exclude: ' + excludePatterns.get(folder.name).join(','));
     }
+
+    const excludeGlobs = workspace
+      .getConfiguration('pa-hub')
+      .get<string[]>('privacy.excludeGlobs', []);
+    const privacyPolicy = createPrivacyPolicy({
+      roots: workspace.workspaceFolders.map(f => f.uri.fsPath),
+      excludeGlobs,
+    });
+    const { matcher: privacyMatcher, dataStore: privacyDataStore } =
+      withPrivacy(privacyPolicy, matcher, rawDataStore);
 
     const notesExtensions = Config.getNotesExtensions();
     const defaultExtension = Config.getDefaultNoteExtension();
@@ -108,7 +102,7 @@ export async function activate(context: ExtensionContext) {
     const profiler = new LoadProfiler();
     const eventLoopMonitor = new EventLoopMonitor();
 
-    const dataStore = profiler.instrumentDataStore(rawDataStore);
+    const dataStore = profiler.instrumentDataStore(privacyDataStore);
 
     const parserCache = await VsCodeBasedParserCache.create(context);
     context.subscriptions.push(parserCache);
@@ -130,7 +124,7 @@ export async function activate(context: ExtensionContext) {
 
     // Initialize embedding provider
     const experimentalEnabled = workspace
-      .getConfiguration('foam')
+      .getConfiguration('pa-hub')
       .get('experimental');
     const embeddingProvider = experimentalEnabled
       ? new OllamaEmbeddingProvider()
@@ -141,7 +135,7 @@ export async function activate(context: ExtensionContext) {
 
     const foamPromise = bootstrap(
       workspaceRoots,
-      matcher,
+      privacyMatcher,
       watcher,
       dataStore,
       parser,
@@ -197,26 +191,17 @@ export async function activate(context: ExtensionContext) {
       .map(r => r.value)
       .filter((r): r is FoamFeatureResult => r != null);
 
-    const featureTelemetry = feats.reduce(
-      (acc, r) => ({ ...acc, ...r.telemetry }),
-      {} as Record<string, string>
-    );
-    telemetry.trackConfigSnapshot();
-    telemetry.trackWorkspaceStats(noteCount, attachmentCount, featureTelemetry);
-
     context.subscriptions.push(
-      commands.registerCommand('foam-vscode.clear-cache', () =>
-        parserCache.clear()
-      ),
+      commands.registerCommand('pa-hub.clear-cache', () => parserCache.clear()),
       workspace.onDidChangeConfiguration(e => {
         if (
           [
-            'foam.files.ignore',
-            'foam.files.exclude',
-            'foam.files.include',
-            'foam.files.attachmentExtensions',
-            'foam.files.noteExtensions',
-            'foam.files.defaultNoteExtension',
+            'pa-hub.files.ignore',
+            'pa-hub.files.exclude',
+            'pa-hub.files.include',
+            'pa-hub.files.attachmentExtensions',
+            'pa-hub.files.noteExtensions',
+            'pa-hub.files.defaultNoteExtension',
           ].some(setting => e.affectsConfiguration(setting))
         ) {
           window.showInformationMessage(
@@ -225,6 +210,16 @@ export async function activate(context: ExtensionContext) {
         }
       })
     );
+
+    // Tasks tree
+    const tasksCandidates = [
+      path.join(os.homedir(), 'projects', 'export-setup', 'personal-assistant-copy', 'tasks-repo'),
+      path.join(os.homedir(), 'research-sources', 'tasks-repo'),
+    ];
+    const wsRoot = workspace.workspaceFolders?.[0]?.uri.fsPath;
+    if (wsRoot) tasksCandidates.push(path.join(wsRoot, 'tasks-repo'));
+    const tasksDir = tasksCandidates.find(d => fs.existsSync(d)) ?? tasksCandidates[0];
+    activatePaHub(context, tasksDir, privacyPolicy);
 
     return {
       extendMarkdownIt: (md: markdownit) => {

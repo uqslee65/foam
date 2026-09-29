@@ -1,0 +1,17 @@
+{
+  "folders": [
+    {
+      "name": "research-sources",
+      "path": "/Users/slee65/research-sources"
+    },
+    {
+      "name": "export-setup",
+      "path": "/Users/slee65/projects/export-setup"
+    }
+  ],
+  "settings": {
+    "pa-hub.privacy.excludeGlobs": [
+      "**/knowledge/me/profile.md"
+    ]
+  }
+}

@@ -11,7 +11,7 @@ export default async function activate(
   foamPromise: Promise<Foam>
 ) {
   context.subscriptions.push(
-    commands.registerCommand('foam-vscode.open-dated-note', async date => {
+    commands.registerCommand('pa-hub.open-dated-note', async date => {
       const foam = await foamPromise;
       switch (getFoamVsCodeConfig('dateSnippets.afterCompletion')) {
         case 'navigateToNote':

@@ -11,7 +11,7 @@ describe('copy-without-brackets command', () => {
     ]);
     const { editor } = await showInEditor(uri);
     editor.selection = new Selection(0, 0, 1, 0);
-    await commands.executeCommand('foam-vscode.copy-without-brackets');
+    await commands.executeCommand('pa-hub.copy-without-brackets');
     const value = await env.clipboard.readText();
     expect(value).toEqual('This is my Test Content.');
   });

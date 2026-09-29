@@ -26,7 +26,7 @@ import { instrumentTreeView } from '../../services/telemetry';
 
 /** Retrieve the placeholders configuration */
 export function getPlaceholdersConfig(): GroupedResourcesConfig {
-  const placeholderCfg = vscode.workspace.getConfiguration('foam.placeholders');
+  const placeholderCfg = vscode.workspace.getConfiguration('pa-hub.placeholders');
   const exclude: string[] = placeholderCfg.get('exclude') ?? [];
   return { exclude };
 }
@@ -47,7 +47,7 @@ export default async function activate(
     matcher
   );
 
-  const treeView = vscode.window.createTreeView('foam-vscode.placeholders', {
+  const treeView = vscode.window.createTreeView('pa-hub.placeholders', {
     treeDataProvider: provider,
     showCollapseAll: true,
   });
@@ -66,7 +66,7 @@ export default async function activate(
       treeView.title = baseTitle + ` (${provider.nValues})`;
     }),
     vscode.commands.registerCommand(
-      `foam-vscode.views.placeholders.expand-all`,
+      `pa-hub.views.placeholders.expand-all`,
       () =>
         expandAll(
           treeView,
@@ -87,7 +87,7 @@ export default async function activate(
 export class PlaceholderTreeView extends GroupedResourcesTreeDataProvider {
   public show = new ContextMemento<'all' | 'for-current-file'>(
     this.state,
-    `foam-vscode.views.${this.providerId}.show`,
+    `pa-hub.views.${this.providerId}.show`,
     'all'
   );
 
@@ -100,14 +100,14 @@ export class PlaceholderTreeView extends GroupedResourcesTreeDataProvider {
     super('placeholders', state, matcher);
     this.disposables.push(
       vscode.commands.registerCommand(
-        `foam-vscode.views.${this.providerId}.show:all`,
+        `pa-hub.views.${this.providerId}.show:all`,
         () => {
           this.show.update('all');
           this.refresh();
         }
       ),
       vscode.commands.registerCommand(
-        `foam-vscode.views.${this.providerId}.show:for-current-file`,
+        `pa-hub.views.${this.providerId}.show:for-current-file`,
         () => {
           this.show.update('for-current-file');
           this.refresh();

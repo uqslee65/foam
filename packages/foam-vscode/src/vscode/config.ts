@@ -6,7 +6,7 @@ import { expandAlternateGroups } from './utils/glob-expand';
  * Paths that are never knowledge base content, excluded regardless of
  * configuration.
  *
- * `foam.files.exclude` is an array setting, so a user value replaces the
+ * `pa-hub.files.exclude` is an array setting, so a user value replaces the
  * default instead of extending it — anything left to that default disappears
  * the moment someone adds a single pattern of their own.
  *
@@ -28,15 +28,15 @@ export class VsCodeFoamConfig implements IFoamConfig {
   getFilesInclude(): string[] {
     return workspace
       .getConfiguration()
-      .get('foam.files.include', ['**/*'])
+      .get('pa-hub.files.include', ['**/*'])
       .flatMap(expandAlternateGroups);
   }
 
   getFilesExclude(): string[] {
     return [
       ...ALWAYS_EXCLUDED,
-      ...workspace.getConfiguration().get('foam.files.exclude', []),
-      ...workspace.getConfiguration().get('foam.files.ignore', []),
+      ...workspace.getConfiguration().get('pa-hub.files.exclude', []),
+      ...workspace.getConfiguration().get('pa-hub.files.ignore', []),
       ...Object.keys(workspace.getConfiguration().get('files.exclude', {})),
     ].flatMap(expandAlternateGroups);
   }
@@ -46,7 +46,7 @@ export class VsCodeFoamConfig implements IFoamConfig {
       '.' +
       (
         workspace
-          .getConfiguration('foam')
+          .getConfiguration('pa-hub')
           .get('files.defaultNoteExtension', 'md') ?? 'md'
       ).trim()
     );
@@ -55,7 +55,7 @@ export class VsCodeFoamConfig implements IFoamConfig {
   getNotesExtensions(): string[] {
     const defaultExtension = this.getDefaultNoteExtension();
     const extras = workspace
-      .getConfiguration('foam')
+      .getConfiguration('pa-hub')
       .get('files.notesExtensions', '')
       .split(' ')
       .map((e: string) => e.trim())
@@ -66,7 +66,7 @@ export class VsCodeFoamConfig implements IFoamConfig {
 
   getAttachmentExtensions(): string[] {
     return workspace
-      .getConfiguration('foam')
+      .getConfiguration('pa-hub')
       .get(
         'files.attachmentExtensions',
         'pdf mp3 webm wav m4a mp4 avi mov rtf txt doc docx pages xls xlsx numbers ppt pptm pptx'
@@ -77,57 +77,57 @@ export class VsCodeFoamConfig implements IFoamConfig {
 
   getNewNotePath(): 'root' | 'currentDir' {
     return workspace
-      .getConfiguration('foam')
+      .getConfiguration('pa-hub')
       .get('files.newNotePath', 'root') as 'root' | 'currentDir';
   }
 
   getTemplatesFolder(): string {
     return workspace
-      .getConfiguration('foam')
+      .getConfiguration('pa-hub')
       .get('templates.folder', '.foam/templates');
   }
 
   getDailyNoteDirectory(): string | null {
     return (
       workspace
-        .getConfiguration('foam')
+        .getConfiguration('pa-hub')
         .get<string | null>('openDailyNote.directory', null) ?? null
     );
   }
 
   getDailyNoteFilenameFormat(): string {
     return workspace
-      .getConfiguration('foam')
+      .getConfiguration('pa-hub')
       .get('openDailyNote.filenameFormat', 'isoDate');
   }
 
   getDailyNoteFileExtension(): string {
     return workspace
-      .getConfiguration('foam')
+      .getConfiguration('pa-hub')
       .get('openDailyNote.fileExtension', 'md');
   }
 
   getDailyNoteTitleFormat(): string | null {
     return (
       workspace
-        .getConfiguration('foam')
+        .getConfiguration('pa-hub')
         .get<string | null>('openDailyNote.titleFormat', null) ?? null
     );
   }
 
   getOpenDailyNoteOnStartup(): boolean {
     return workspace
-      .getConfiguration('foam')
+      .getConfiguration('pa-hub')
       .get('openDailyNote.onStartup', false);
   }
 
   getDateLocale(): string {
-    return workspace.getConfiguration('foam').get('dateLocale', 'default');
+    return workspace.getConfiguration('pa-hub').get('dateLocale', 'default');
   }
 
   getDateSnippetsAfterCompletion(): 'noop' | 'createNote' | 'navigateToNote' {
     return workspace
-      .getConfiguration('foam')
+      .getConfiguration('pa-hub')
       .get('dateSnippets.afterCompletion', 'createNote') as
       | 'noop'
       | 'createNote'
@@ -136,16 +136,16 @@ export class VsCodeFoamConfig implements IFoamConfig {
 
   getLinksDirectoryMode(): 'resolve' | 'disabled' {
     return workspace
-      .getConfiguration('foam')
+      .getConfiguration('pa-hub')
       .get('links.directory.mode', 'resolve') as 'resolve' | 'disabled';
   }
 
   getLinksSyncEnable(): boolean {
-    return workspace.getConfiguration('foam').get('links.sync.enable', true);
+    return workspace.getConfiguration('pa-hub').get('links.sync.enable', true);
   }
 
   getLinksHoverEnable(): boolean {
-    return workspace.getConfiguration('foam').get('links.hover.enable', true);
+    return workspace.getConfiguration('pa-hub').get('links.hover.enable', true);
   }
 
   getEditLinkReferenceDefinitions():
@@ -153,7 +153,7 @@ export class VsCodeFoamConfig implements IFoamConfig {
     | 'withoutExtensions'
     | 'off' {
     return workspace
-      .getConfiguration('foam')
+      .getConfiguration('pa-hub')
       .get('edit.linkReferenceDefinitions', 'off') as
       | 'withExtensions'
       | 'withoutExtensions'
@@ -162,13 +162,13 @@ export class VsCodeFoamConfig implements IFoamConfig {
 
   getCompletionLabel(): 'path' | 'title' | 'identifier' {
     return workspace
-      .getConfiguration('foam')
+      .getConfiguration('pa-hub')
       .get('completion.label', 'path') as 'path' | 'title' | 'identifier';
   }
 
   getCompletionUseAlias(): 'never' | 'whenPathDiffersFromTitle' {
     return workspace
-      .getConfiguration('foam')
+      .getConfiguration('pa-hub')
       .get('completion.useAlias', 'never') as
       | 'never'
       | 'whenPathDiffersFromTitle';
@@ -176,7 +176,7 @@ export class VsCodeFoamConfig implements IFoamConfig {
 
   getCompletionLinkFormat(): 'wikilink' | 'link' {
     return workspace
-      .getConfiguration('foam')
+      .getConfiguration('pa-hub')
       .get('completion.linkFormat', 'wikilink') as 'wikilink' | 'link';
   }
 
@@ -186,7 +186,7 @@ export class VsCodeFoamConfig implements IFoamConfig {
     | 'content-inline'
     | 'content-card' {
     return workspace
-      .getConfiguration('foam')
+      .getConfiguration('pa-hub')
       .get('preview.embedNoteType', 'full-card') as
       | 'full-inline'
       | 'full-card'
@@ -195,26 +195,26 @@ export class VsCodeFoamConfig implements IFoamConfig {
   }
 
   getGraphOnStartup(): boolean {
-    return workspace.getConfiguration('foam').get('graph.onStartup', false);
+    return workspace.getConfiguration('pa-hub').get('graph.onStartup', false);
   }
 
   getGraphNavigateToPreview(): boolean {
     return workspace
-      .getConfiguration('foam')
+      .getConfiguration('pa-hub')
       .get('graph.navigateToPreview', false);
   }
 
   getGraphTitleMaxLength(): number {
-    return workspace.getConfiguration('foam').get('graph.titleMaxLength', 24);
+    return workspace.getConfiguration('pa-hub').get('graph.titleMaxLength', 24);
   }
 
   getGraphStyle(): object {
-    return workspace.getConfiguration('foam').get('graph.style', {});
+    return workspace.getConfiguration('pa-hub').get('graph.style', {});
   }
 
   getSupportedLanguages(): string[] {
     return workspace
-      .getConfiguration('foam')
+      .getConfiguration('pa-hub')
       .get('supportedLanguages', ['markdown']);
   }
 }
@@ -224,17 +224,17 @@ export interface ConfigurationMonitor<T> extends Disposable {
 }
 
 export const getFoamVsCodeConfig = <T>(key: string, defaultValue?: T): T =>
-  workspace.getConfiguration('foam').get(key, defaultValue);
+  workspace.getConfiguration('pa-hub').get(key, defaultValue);
 
 export const updateFoamVsCodeConfig = <T>(key: string, value: T) =>
-  workspace.getConfiguration().update('foam.' + key, value);
+  workspace.getConfiguration().update('pa-hub.' + key, value);
 
 export const monitorFoamVsCodeConfig = <T>(
   key: string
 ): ConfigurationMonitor<T> => {
   let value: T = getFoamVsCodeConfig(key);
   const listener = workspace.onDidChangeConfiguration(e => {
-    if (e.affectsConfiguration('foam.' + key)) {
+    if (e.affectsConfiguration('pa-hub.' + key)) {
       value = getFoamVsCodeConfig(key);
     }
   });

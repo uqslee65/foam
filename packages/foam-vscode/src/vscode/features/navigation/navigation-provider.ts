@@ -389,7 +389,7 @@ export class NavigationProvider
 
     const tags: vscode.DocumentLink[] = resource.tags.map(tag => {
       const command = {
-        name: 'foam-vscode.views.tags-explorer.focus',
+        name: 'pa-hub.views.tags-explorer.focus',
         params: [tag.label, documentUri],
       };
 

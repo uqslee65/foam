@@ -15,7 +15,7 @@ import {
 } from '../../utils/vsc-utils';
 
 const MARKDOWN_LINK_NOTIFICATION_KEY =
-  'foam.links.sync.markdownLinkNotificationShown';
+  'pa-hub.links.sync.markdownLinkNotificationShown';
 
 export default async function activate(
   context: vscode.ExtensionContext,

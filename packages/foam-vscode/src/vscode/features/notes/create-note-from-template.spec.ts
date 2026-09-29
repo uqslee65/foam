@@ -17,7 +17,7 @@ describe('create-note-from-template command', () => {
       .spyOn(window, 'showQuickPick')
       .mockImplementationOnce(vi.fn(() => Promise.resolve(undefined)));
 
-    await commands.executeCommand('foam-vscode.create-note-from-template');
+    await commands.executeCommand('pa-hub.create-note-from-template');
 
     expect(spy).toHaveBeenCalledWith(['Yes', 'No'], {
       placeHolder:
@@ -41,7 +41,7 @@ describe('create-note-from-template command', () => {
       .spyOn(window, 'showQuickPick')
       .mockImplementationOnce(vi.fn(() => Promise.resolve(undefined)));
 
-    await commands.executeCommand('foam-vscode.create-note-from-template');
+    await commands.executeCommand('pa-hub.create-note-from-template');
 
     expect(spy).toHaveBeenCalledWith(
       [
@@ -74,7 +74,7 @@ Template A
       .spyOn(window, 'showQuickPick')
       .mockImplementationOnce(vi.fn(() => Promise.resolve(undefined)));
 
-    await commands.executeCommand('foam-vscode.create-note-from-template');
+    await commands.executeCommand('pa-hub.create-note-from-template');
 
     expect(spy).toHaveBeenCalledWith(
       [

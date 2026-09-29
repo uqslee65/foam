@@ -33,7 +33,7 @@ export default async function activate(
   );
   provider.refresh();
   const treeView = vscode.window.createTreeView<NotesTreeItems>(
-    'foam-vscode.notes-explorer',
+    'pa-hub.notes-explorer',
     {
       treeDataProvider: provider,
       canSelectMany: true,
@@ -66,12 +66,12 @@ export default async function activate(
     treeView.message = text ? `Filtering: "${text}"` : undefined;
     vscode.commands.executeCommand(
       'setContext',
-      'foam-vscode.views.notes-explorer.filter-active',
+      'pa-hub.views.notes-explorer.filter-active',
       !!text
     );
     if (!text) {
       await vscode.commands.executeCommand(
-        'workbench.actions.treeView.foam-vscode.notes-explorer.collapseAll'
+        'workbench.actions.treeView.pa-hub.notes-explorer.collapseAll'
       );
     }
   };
@@ -84,14 +84,14 @@ export default async function activate(
       provider.refresh();
     }),
     vscode.commands.registerCommand(
-      `foam-vscode.views.notes-explorer.collapse-all`,
+      `pa-hub.views.notes-explorer.collapse-all`,
       () =>
         vscode.commands.executeCommand(
-          'workbench.actions.treeView.foam-vscode.notes-explorer.collapseAll'
+          'workbench.actions.treeView.pa-hub.notes-explorer.collapseAll'
         )
     ),
     vscode.commands.registerCommand(
-      `foam-vscode.views.notes-explorer.connections:toggle`,
+      `pa-hub.views.notes-explorer.connections:toggle`,
       async () => {
         await provider.showConnections.update(
           provider.showConnections.get() === 'show' ? 'hide' : 'show'
@@ -100,21 +100,21 @@ export default async function activate(
       }
     ),
     vscode.commands.registerCommand(
-      `foam-vscode.views.notes-explorer.include:notes-only`,
+      `pa-hub.views.notes-explorer.include:notes-only`,
       async () => {
         await provider.include.update('notes-only');
         provider.refresh();
       }
     ),
     vscode.commands.registerCommand(
-      `foam-vscode.views.notes-explorer.include:all`,
+      `pa-hub.views.notes-explorer.include:all`,
       async () => {
         await provider.include.update('all');
         provider.refresh();
       }
     ),
     vscode.commands.registerCommand(
-      `foam-vscode.views.notes-explorer.view:toggle`,
+      `pa-hub.views.notes-explorer.view:toggle`,
       async () => {
         await provider.viewMode.update(
           provider.viewMode.get() === 'hierarchy' ? 'flat' : 'hierarchy'
@@ -123,7 +123,7 @@ export default async function activate(
       }
     ),
     vscode.commands.registerCommand(
-      `foam-vscode.views.notes-explorer.set-filter`,
+      `pa-hub.views.notes-explorer.set-filter`,
       () => {
         const inputBox = vscode.window.createInputBox();
         inputBox.prompt = 'Filter notes by title or path';
@@ -143,7 +143,7 @@ export default async function activate(
       }
     ),
     vscode.commands.registerCommand(
-      `foam-vscode.views.notes-explorer.clear-filter`,
+      `pa-hub.views.notes-explorer.clear-filter`,
       () => applyFilter('')
     ),
     onDidChangeActiveTab(revealActiveNoteItem),
@@ -184,17 +184,17 @@ export class NotesProvider extends FolderTreeProvider<
     super();
     this.include = new ContextMemento<'all' | 'notes-only'>(
       this.state,
-      `foam-vscode.views.notes-explorer.include`,
+      `pa-hub.views.notes-explorer.include`,
       'notes-only'
     );
     this.showConnections = new ContextMemento<'show' | 'hide'>(
       this.state,
-      `foam-vscode.views.notes-explorer.connections`,
+      `pa-hub.views.notes-explorer.connections`,
       'hide'
     );
     this.viewMode = new ContextMemento<'hierarchy' | 'flat'>(
       this.state,
-      `foam-vscode.views.notes-explorer.view-mode`,
+      `pa-hub.views.notes-explorer.view-mode`,
       'flat'
     );
   }

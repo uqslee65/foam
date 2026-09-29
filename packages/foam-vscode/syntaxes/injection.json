@@ -1,5 +1,5 @@
 {
-  "scopeName": "foam.wikilink.injection",
+  "scopeName": "pa-hub.wikilink.injection",
   "injectionSelector": "L:meta.paragraph.markdown, L:markup.heading.markdown, L:markup.list.unnumbered.markdown, L:markup.list.numbered.markdown",
   "patterns": [
     {

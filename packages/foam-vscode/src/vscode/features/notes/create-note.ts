@@ -118,7 +118,7 @@ export async function createNote(args: CreateNoteArgs, foam: Foam) {
         foam.workspace.find(new URI(args.sourceLink.uri))?.title || 'Unknown',
         args.sourceLink
       )
-    : TriggerFactory.createCommandTrigger('foam-vscode.create-note');
+    : TriggerFactory.createCommandTrigger('pa-hub.create-note');
 
   // Determine template path
   let templateUri: URI;
@@ -217,7 +217,7 @@ export async function createNote(args: CreateNoteArgs, foam: Foam) {
 }
 
 export const CREATE_NOTE_COMMAND = {
-  command: 'foam-vscode.create-note',
+  command: 'pa-hub.create-note',
 
   /**
    * Creates a command descriptor to create a note from the given placeholder.

@@ -1,0 +1,133 @@
+--- /Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/pa-hub/tests/test_graph_view.test.ts (before)
++++ /Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/pa-hub/tests/test_graph_view.test.ts (after)
+@@ -1,6 +1,13 @@
+ import { beforeEach, describe, expect, it } from 'vitest';
+ import * as vscode from 'vscode';
+ import { URI } from '@foam/core';
++// @ts-expect-error The graph-view package publishes its runtime protocol as ESM while this package type-checks as CommonJS.
++import { makeNodeId } from '@foam/graph-view/protocol';
++import type { NodeId } from '@foam/graph-view/protocol' with {
++  'resolution-mode': 'import',
++};
++import { resolveNodeOpen } from '../open-node';
++import { createPrivacyPolicy } from '../privacy';
+ import {
+   cutTitle,
+   getGraphStyle,
+@@ -114,4 +121,22 @@
+   it('test_graph_view_cut_title_negative_maxlen', () => {
+     expect(cutTitle('any', -1)).toBe('any');
+   });
++
++  it('test_graph_view_resolve_node_open_stale_mapping', () => {
++    const nodeId = makeNodeId('vault', 'notes/stale.md');
++    const uri = URI.file('/workspace/stale.md');
++    const result = resolveNodeOpen(
++      nodeId,
++      new Map<NodeId, URI>([[nodeId, uri]]),
++      createPrivacyPolicy({ roots: [], excludeGlobs: [] }),
++      () => false
++    );
++
++    expect(result).toEqual({
++      allowed: false,
++      reason: 'stale_mapping',
++      nodeId,
++      uri,
++    });
++  });
+ });
+--- /Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/vscode/features/graph-webview/index.ts (before)
++++ /Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/vscode/features/graph-webview/index.ts (after)
+@@ -6,6 +6,9 @@
+ import { getFoamVsCodeConfig } from '../../config';
+ import { getActiveTabUri, onDidChangeActiveTab } from '../../services/editor';
+ import { buildRootQualifiedGraphData } from '../../../pa-hub/graph-data';
++import { resolveNodeOpen } from '../../../pa-hub/open-node';
++import { createPrivacyPolicy } from '../../../pa-hub/privacy';
++import type { PrivacyPolicy } from '../../../pa-hub/privacy';
+ import {
+   buildCsp,
+   fillGraphHtml,
+@@ -27,6 +30,7 @@
+ class GraphWebviewProvider implements vscode.WebviewViewProvider {
+   private webviewView: vscode.WebviewView | undefined;
+   private idToUri: Map<NodeId, URI> = new Map();
++  private policy: PrivacyPolicy;
+ 
+   constructor(
+     private readonly context: vscode.ExtensionContext,
+@@ -71,6 +75,17 @@
+     webviewView.webview.html = filled;
+ 
+     const foam = await this.foamPromise;
++    const workspaceFolderFsPaths =
++      vscode.workspace.workspaceFolders?.map(folder => folder.uri.fsPath) ??
++      [];
++    const excludeGlobs = vscode.workspace
++      .getConfiguration('pa-hub')
++      .get<string[]>('privacy.excludeGlobs', []);
++    this.policy = createPrivacyPolicy({
++      roots: workspaceFolderFsPaths,
++      excludeGlobs,
++    });
++
+     webviewView.webview.onDidReceiveMessage(
+       async message => {
+         switch (message.type) {
+@@ -85,32 +100,33 @@
+             break;
+           }
+           case 'webviewDidSelectNode': {
+-            const resolvedUri = this.idToUri.get(message.payload as NodeId);
+-            if (!resolvedUri) {
++            const result = resolveNodeOpen(
++              message.payload,
++              this.idToUri,
++              this.policy,
++              uri => isSome(foam.workspace.find(uri))
++            );
++            if (!result.allowed) {
+               break;
+             }
+ 
+-            const noteUri = toVsCodeUri(resolvedUri);
+-            const selectedNote = foam.workspace.get(resolvedUri);
+-
+-            if (isSome(selectedNote)) {
+-              const navigateToPreview = getFoamVsCodeConfig(
+-                'graph.navigateToPreview',
+-                false
++            const noteUri = toVsCodeUri(result.uri);
++            const navigateToPreview = getFoamVsCodeConfig(
++              'graph.navigateToPreview',
++              false
++            );
++            const command = getNodeNavigationCommand(
++              result.uri.path,
++              navigateToPreview
++            );
++            if (command === 'markdown.showPreview') {
++              vscode.commands.executeCommand(command, noteUri);
++            } else {
++              vscode.commands.executeCommand(
++                command,
++                noteUri,
++                vscode.ViewColumn.One
+               );
+-              const command = getNodeNavigationCommand(
+-                resolvedUri.path,
+-                navigateToPreview
+-              );
+-              if (command === 'markdown.showPreview') {
+-                vscode.commands.executeCommand(command, noteUri);
+-              } else {
+-                vscode.commands.executeCommand(
+-                  command,
+-                  noteUri,
+-                  vscode.ViewColumn.One
+-                );
+-              }
+             }
+             break;
+           }

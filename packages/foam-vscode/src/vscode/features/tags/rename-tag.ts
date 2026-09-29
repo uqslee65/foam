@@ -14,7 +14,7 @@ import { Position } from '@foam/core';
  */
 export const RENAME_TAG_COMMAND = {
   /** VS Code command identifier */
-  command: 'foam-vscode.rename-tag',
+  command: 'pa-hub.rename-tag',
   /** Display name shown in command palette */
   title: 'Foam: Rename Tag',
 };

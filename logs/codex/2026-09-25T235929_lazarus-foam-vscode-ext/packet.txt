@@ -1,0 +1,106 @@
+<task>
+Task slug: lazarus-foam-vscode-ext
+Plan ref: N10
+Shard: webview-security (011a, sub-shard 1/2 of N10 graph_view)
+Depends: N09 (CLOSED — index.html template with __PA_HUB_CSP__ and __PA_HUB_NONCE__ placeholders)
+
+Action: Create webview-security.ts (nonce generation, CSP construction, HTML template filling) and its unit tests. All pure functions, no vscode import.
+
+Done when: All test cases pass AND tsc --noEmit clean AND no vscode import in webview-security.ts.
+
+Worker model: gpt-5.6-luna
+Worker effort: xhigh
+</task>
+
+<plan_first>
+Before editing anything, output a numbered plan of exactly which functions you will write in which file, then execute the plan in the same turn.
+</plan_first>
+
+<exact_io_contract>
+This section is a specification, not a suggestion. Implement it literally.
+Repo root: /Users/slee65/projects/lazarus-foam-ext
+
+Owns (exactly these 2 files — create both, touch nothing else):
+1. packages/foam-vscode/src/pa-hub/webview-security.ts (NEW)
+2. packages/foam-vscode/src/pa-hub/tests/test_webview_security.test.ts (NEW)
+
+=== webview-security.ts ===
+
+Import: only node:crypto (for randomBytes). No vscode import. No other runtime deps.
+
+Exports:
+
+  generateNonce(): string
+    - Returns a 32-byte random hex string via crypto.randomBytes(32).toString('hex').
+
+  buildCsp(params: { cspSource: string; nonce: string }): string
+    - Returns this exact CSP string (one line, semicolons separating directives):
+      "default-src 'none'; script-src 'nonce-${nonce}'; style-src ${cspSource} 'unsafe-inline'; img-src ${cspSource}; font-src ${cspSource}"
+    - The 'unsafe-inline' in style-src is required because force-graph 1.51.4 injects a runtime style element.
+
+  fillGraphHtml(template: string, params: { csp: string; nonce: string; resolveAsset: (filename: string) => string }): string
+    - Replaces __PA_HUB_CSP__ with params.csp (exactly 1 occurrence in the template).
+    - Replaces __PA_HUB_NONCE__ with params.nonce (exactly 2 occurrences in the template: one on link, one on script).
+    - Replaces data-replace attributes: pattern /data-replace (src|href)="[^"]+"/g
+      For each match: extract the filename from the quoted value, call resolveAsset(filename), replace the whole match with just the attribute (src or href) = resolved URI.
+      Example: data-replace src="./main.js" becomes src="https://webview-uri/main.js"
+    - Returns the filled HTML string.
+
+The template to fill is the built index.html at static/dataviz/index.html (N09 output):
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Security-Policy" content="__PA_HUB_CSP__" />
+    <meta charset="utf-8" />
+    <link data-replace href="./main.css" rel="stylesheet" nonce="__PA_HUB_NONCE__" />
+  </head>
+  <body>
+    <div id="app"></div>
+    <script data-replace src="./main.js" nonce="__PA_HUB_NONCE__"></script>
+  </body>
+</html>
+```
+
+=== test_webview_security.test.ts ===
+
+All test names MUST be prefixed with test_webview_security_ (required for vitest -t filter).
+No vscode import. No tmpdir. Pure string manipulation tests.
+
+Required test cases:
+1. test_webview_security_nonce_length — generateNonce returns 64-char hex string
+2. test_webview_security_nonce_uniqueness — two calls return different values
+3. test_webview_security_nonce_hex_only — matches /^[0-9a-f]{64}$/
+4. test_webview_security_csp_contains_nonce — buildCsp output contains nonce-${nonce}
+5. test_webview_security_csp_contains_csp_source — output contains the cspSource param
+6. test_webview_security_csp_unsafe_inline — output contains 'unsafe-inline' in style-src
+7. test_webview_security_csp_default_none — output starts with default-src 'none'
+8. test_webview_security_fill_replaces_csp — __PA_HUB_CSP__ replaced
+9. test_webview_security_fill_replaces_nonce — both __PA_HUB_NONCE__ replaced
+10. test_webview_security_fill_no_placeholders — filled output has no __PA_HUB_ strings
+11. test_webview_security_fill_data_replace — data-replace attributes resolved via resolveAsset
+12. test_webview_security_fill_preserves_structure — filled output is valid HTML with CSP meta
+13. test_webview_security_csp_exact_format — exact CSP string matches "default-src 'none'; script-src 'nonce-NONCE'; style-src SOURCE 'unsafe-inline'; img-src SOURCE; font-src SOURCE" with substitutions
+</exact_io_contract>
+
+<acceptance_checks>
+python3 /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N10a_1.py
+bash /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N10a_2.sh
+</acceptance_checks>
+
+<forbidden_actions>
+Do not edit any file outside the 2 owns paths listed above.
+Do not modify index.ts, graph-view.ts, roots.ts, graph-data.ts, or any other file.
+Do not write .agent/current-plan.md or any file outside owns.
+Do not run yarn install or any network command.
+Do not launch code-insiders.
+</forbidden_actions>
+
+<gates_ledger>
+logs/pdca/gates/lazarus-foam-vscode-ext/GATES.md
+</gates_ledger>
+
+<compact_output_contract>
+Lead with DONE or BLOCKED, then files changed, then checks run.
+Do not add extra prose.
+</compact_output_contract>

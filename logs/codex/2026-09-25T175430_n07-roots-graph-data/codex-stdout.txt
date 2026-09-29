@@ -1,0 +1,14 @@
+# CLAIM — Codex self-report. Evidence only, never verdict.
+DONE
+
+Files changed:
+
+- [roots.ts](/Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/pa-hub/roots.ts)
+- [graph-data.ts](/Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/pa-hub/graph-data.ts)
+- [roots.test.ts](/Users/slee65/projects/lazarus-foam-ext/packages/foam-vscode/src/pa-hub/roots.test.ts)
+
+Checks:
+
+- `k_N07_1.py` — PASS, tsc=0
+- `k_N07_2.sh` — PASS, vitest=14, privacy=19, tsc=0
+- No VS Code imports; serialized graph data contains no absolute/file URIs.

@@ -1,0 +1,192 @@
+<task>
+Task slug: lazarus-foam-vscode-ext
+Plan ref: N12
+Shard: focus wiring (014c, sub-shard 3/3 of N12 focus)
+Depends: 014a (focus parse + queue CLOSED), 014b (focus file watcher CLOSED), 013b (open-node wiring CLOSED)
+
+Action: Wire FocusQueue and watchFocusFile into the graph-webview provider and activate function. Focus requests from the file watcher flow through the queue to the webview via didRequestFocus on webviewDidBecomeReady.
+
+Done when: file watcher feeds FocusQueue in activate, provider drains queue on webviewDidBecomeReady and posts didRequestFocus to webview, tsc clean, all existing tests still pass.
+
+Worker model: gpt-5.6-luna
+Worker effort: xhigh
+</task>
+
+<plan_first>
+Before editing anything, output a numbered plan of exactly which changes you will make in which file, then execute the plan in the same turn.
+</plan_first>
+
+<exact_io_contract>
+This section is a specification, not a suggestion. Implement it literally.
+Repo root: /Users/slee65/projects/lazarus-foam-ext
+
+Owns (exactly these 2 files — modify both, touch nothing else):
+1. packages/foam-vscode/src/vscode/features/graph-webview/index.ts (MODIFY)
+2. packages/foam-vscode/src/pa-hub/tests/test_graph_view.test.ts (MODIFY — may add tests)
+
+Read BEFORE editing:
+- packages/foam-vscode/src/pa-hub/focus.ts (FocusQueue, watchFocusFile, FocusFs, WatchFocusFileOptions exports)
+- packages/foam-vscode/src/pa-hub/open-node.ts (resolveNodeOpen — already wired from 013b)
+- packages/foam-graph/src/protocol.ts (FocusRequest type, didRequestFocus message type, webviewDidFocusNode message type)
+- packages/foam-vscode/src/vscode/features/graph-webview/index.ts (current state with 013b changes)
+
+=== index.ts CHANGES ===
+
+ADD imports (after existing pa-hub imports):
+```typescript
+import { FocusQueue, watchFocusFile } from '../../../pa-hub/focus';
+import type { FocusFs } from '../../../pa-hub/focus';
+import type { FocusRequest } from '@foam/graph-view/protocol' with { 'resolution-mode': 'import' };
+```
+
+ADD Node imports (at top, for the real FocusFs in activate):
+```typescript
+import { readFile as fsReadFile } from 'fs/promises';
+import { watch as fsWatch } from 'fs';
+import { homedir } from 'os';
+```
+
+MODIFY GraphWebviewProvider constructor to accept focusQueue:
+```typescript
+constructor(
+    private readonly context: vscode.ExtensionContext,
+    private readonly foamPromise: Promise<Foam>,
+    private readonly focusQueue: FocusQueue
+) {}
+```
+
+MODIFY webviewDidBecomeReady handler (currently empty, line ~133-135):
+FROM:
+```typescript
+case 'webviewDidBecomeReady': {
+  break;
+}
+```
+TO:
+```typescript
+case 'webviewDidBecomeReady': {
+  this.focusQueue.markReady();
+  for (const request of this.focusQueue.drain()) {
+    webviewView.webview.postMessage({
+      type: 'didRequestFocus',
+      payload: request,
+    });
+  }
+  break;
+}
+```
+
+ADD new case after the error handler (before the closing switch brace):
+```typescript
+case 'webviewDidFocusNode': {
+  Logger.info('Focus result', message.payload);
+  break;
+}
+```
+
+MODIFY onDidDispose handler (currently lines ~157-163) to add markNotReady:
+FROM:
+```typescript
+webviewView.onDidDispose(() => {
+  noteUpdatedListener.dispose();
+  editorListener.dispose();
+  if (this.webviewView === webviewView) {
+    this.webviewView = undefined;
+  }
+});
+```
+TO:
+```typescript
+webviewView.onDidDispose(() => {
+  noteUpdatedListener.dispose();
+  editorListener.dispose();
+  this.focusQueue.markNotReady();
+  if (this.webviewView === webviewView) {
+    this.webviewView = undefined;
+  }
+});
+```
+
+MODIFY activate function to create FocusQueue, FocusFs, and start watcher:
+```typescript
+export default async function activate(
+  context: vscode.ExtensionContext,
+  foamPromise: Promise<Foam>
+) {
+  const focusQueue = new FocusQueue();
+  const provider = new GraphWebviewProvider(context, foamPromise, focusQueue);
+
+  // ... existing registrations unchanged ...
+
+  const focusDir = `${homedir()}/.claude/state`;
+  const focusFilename = 'pa-hub-focus.json';
+  const workspaceId = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
+
+  const focusFs: FocusFs = {
+    async readFile(filePath: string): Promise<string | null> {
+      try {
+        return await fsReadFile(filePath, 'utf-8');
+      } catch {
+        return null;
+      }
+    },
+    watchDir(
+      dir: string,
+      onChange: () => void,
+      onError: (err: unknown) => void
+    ): { close(): void } {
+      const watcher = fsWatch(dir, { persistent: false }, () => onChange());
+      watcher.on('error', onError);
+      return { close: () => watcher.close() };
+    },
+  };
+
+  const focusWatcher = watchFocusFile({
+    dir: focusDir,
+    filename: focusFilename,
+    fs: focusFs,
+    workspaceId,
+    onRequest: (request: FocusRequest) => focusQueue.enqueue(request),
+  });
+
+  context.subscriptions.push({ dispose: () => focusWatcher.dispose() });
+}
+```
+
+KEEP UNCHANGED:
+- All existing message handlers (webviewDidLoad, webviewDidSelectNode)
+- updateGraph, updateStyle methods
+- handleActiveResourceChange, cutTitle, getGraphStyle, viewConfigToStyle, mergeStyles, resolveViewStyle, getNodeNavigationCommand exports
+- The pa-hub.show-graph command registration
+- The webview view provider registration
+
+=== test_graph_view.test.ts CHANGES ===
+
+No new tests required. The wiring is integration-level (requires vscode mock for WebviewView, file system, etc.). The existing 17 tests all import pure exported functions (cutTitle, getGraphStyle, handleActiveResourceChange, etc.) and do NOT construct GraphWebviewProvider, so they are unaffected by the constructor change. All 17 existing tests must continue to pass.
+</exact_io_contract>
+
+<acceptance_checks>
+python3 /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N12c_1.py
+bash /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N12c_2.sh
+</acceptance_checks>
+
+<forbidden_actions>
+Do not edit any file outside the 2 owns paths listed above.
+Do not modify focus.ts, open-node.ts, privacy.ts, privacy-index.ts, roots.ts, graph-data.ts, protocol.ts, extension.ts, webview-security.ts.
+Do not run yarn install, yarn build, yarn compile, or any network command.
+Do not run tsc WITHOUT --noEmit.
+Do not launch code-insiders.
+Do not add new dependencies.
+Do not remove or modify resolveNodeOpen wiring from 013b.
+Do not remove or modify handleActiveResourceChange, cutTitle, getGraphStyle, viewConfigToStyle, mergeStyles, resolveViewStyle, getNodeNavigationCommand.
+Do not add registerUriHandler (vscode mock lacks it, defer to separate shard).
+</forbidden_actions>
+
+<gates_ledger>
+logs/pdca/gates/lazarus-foam-vscode-ext/GATES.md
+</gates_ledger>
+
+<compact_output_contract>
+Lead with DONE or BLOCKED, then files changed, then checks run.
+Do not add extra prose.
+</compact_output_contract>

@@ -10,6 +10,9 @@ import {
   viewConfigToStyle,
   resolveViewStyle,
 } from '.';
+import type { NodeId } from '@foam/graph-view/protocol' with {
+  'resolution-mode': 'import',
+};
 
 describe('handleActiveResourceChange', () => {
   const makePanel = () =>
@@ -58,10 +61,11 @@ describe('handleActiveResourceChange', () => {
     const note = createTestNote({ uri: '/notes/note-a.md' });
     ws.set(note);
     const foam = { workspace: ws } as any;
-    handleActiveResourceChange(panel, foam, note.uri);
+    const idToUri = new Map([['vault:node-a' as NodeId, note.uri]]);
+    handleActiveResourceChange(panel, foam, note.uri, idToUri);
     expect(panel.webview.postMessage).toHaveBeenCalledWith({
       type: 'didSelectNote',
-      payload: note.uri.path,
+      payload: 'vault:node-a',
     });
   });
 });
@@ -104,7 +108,7 @@ describe('getNodeNavigationCommand', () => {
 
 // Regression tests for https://github.com/foambubble/foam/issues/1620
 //
-// foam.graph.style settings were silently ignored because getGraphStyle()
+// pa-hub.graph.style settings were silently ignored because getGraphStyle()
 // returned the raw StyleConfig directly instead of wrapping it in the
 // StylePayload envelope { style: StyleConfig } that the webview expects.
 // As a result, payload.style was always undefined and theme defaults were used.

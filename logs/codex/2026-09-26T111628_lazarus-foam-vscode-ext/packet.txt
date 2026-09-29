@@ -1,0 +1,120 @@
+<task>
+Task slug: lazarus-foam-vscode-ext
+Plan ref: N11
+Shard: open-node wiring (013b, sub-shard 2/2 of N11 open_node)
+Depends: 013a (open-node domain module CLOSED), N10 (graph_view CLOSED)
+
+Action: Wire resolveNodeOpen into the graph-webview provider's webviewDidSelectNode handler. Create a PrivacyPolicy locally in the provider. Replace workspace.get (throws on miss) with workspace.find + isSome for the isInWorkspace callback.
+
+Done when: webviewDidSelectNode routes through resolveNodeOpen, privacy policy created from workspace config, stale mapping handled without throwing, tsc clean, all existing tests still pass.
+
+Worker model: gpt-5.6-luna
+Worker effort: xhigh
+</task>
+
+<plan_first>
+Before editing anything, output a numbered plan of exactly which changes you will make in which file, then execute the plan in the same turn.
+</plan_first>
+
+<exact_io_contract>
+This section is a specification, not a suggestion. Implement it literally.
+Repo root: /Users/slee65/projects/lazarus-foam-ext
+
+Owns (exactly these 2 files — modify both, touch nothing else):
+1. packages/foam-vscode/src/vscode/features/graph-webview/index.ts (MODIFY)
+2. packages/foam-vscode/src/pa-hub/tests/test_graph_view.test.ts (MODIFY — may add tests)
+
+Read BEFORE editing:
+- packages/foam-vscode/src/pa-hub/open-node.ts (resolveNodeOpen signature + result types)
+- packages/foam-vscode/src/pa-hub/privacy.ts (createPrivacyPolicy signature, PrivacyPolicy interface)
+- packages/foam-vscode/src/extension.ts (existing privacy policy creation pattern at lines 69-74)
+
+=== index.ts CHANGES (wiring resolveNodeOpen) ===
+
+ADD imports:
+- import { resolveNodeOpen } from '../../../pa-hub/open-node';
+- import { createPrivacyPolicy } from '../../../pa-hub/privacy';
+- import type { PrivacyPolicy } from '../../../pa-hub/privacy';
+
+ADD provider state:
+- private policy: PrivacyPolicy on the GraphWebviewProvider class
+
+CREATE policy in resolveWebviewView (after foam is awaited):
+- Read workspace folder fsPaths and pa-hub.privacy.excludeGlobs config
+- Call createPrivacyPolicy({ roots: workspaceFolderFsPaths, excludeGlobs })
+- Store on this.policy
+
+REPLACE webviewDidSelectNode handler (currently lines 87-116):
+The current handler does:
+1. idToUri.get(message.payload as NodeId) — KEEP this concept but route through resolveNodeOpen
+2. foam.workspace.get(resolvedUri) — REMOVE (throws on miss, stale mapping bug)
+3. isSome(selectedNote) check — REPLACE with resolveNodeOpen result
+
+New handler:
+```typescript
+case 'webviewDidSelectNode': {
+  const result = resolveNodeOpen(
+    message.payload,
+    this.idToUri,
+    this.policy,
+    uri => isSome(foam.workspace.find(uri))
+  );
+  if (!result.allowed) {
+    break;
+  }
+  const noteUri = toVsCodeUri(result.uri);
+  const navigateToPreview = getFoamVsCodeConfig('graph.navigateToPreview', false);
+  const command = getNodeNavigationCommand(result.uri.path, navigateToPreview);
+  if (command === 'markdown.showPreview') {
+    vscode.commands.executeCommand(command, noteUri);
+  } else {
+    vscode.commands.executeCommand(command, noteUri, vscode.ViewColumn.One);
+  }
+  break;
+}
+```
+
+REMOVE from webviewDidSelectNode:
+- The `foam.workspace.get(resolvedUri)` call
+- The `isSome(selectedNote)` wrapper (resolveNodeOpen handles this via isInWorkspace)
+- The direct `this.idToUri.get(message.payload as NodeId)` lookup (now inside resolveNodeOpen)
+
+KEEP UNCHANGED:
+- All other message handlers (webviewDidLoad, webviewDidBecomeReady, error)
+- updateGraph method
+- handleActiveResourceChange function
+- cutTitle function
+- All style/view functions
+- The activate function
+
+=== test_graph_view.test.ts CHANGES ===
+
+No new tests required for 013b. The wiring is integration-level (requires vscode mocks for WebviewView, workspace config, commands). resolveNodeOpen is already tested in test_open_node.test.ts. All 16 existing tests must continue to pass.
+
+If you want to add tests, they must be prefixed test_graph_view_ and use only exported pure functions.
+</exact_io_contract>
+
+<acceptance_checks>
+python3 /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N11b_1.py
+bash /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N11b_2.sh
+</acceptance_checks>
+
+<forbidden_actions>
+Do not edit any file outside the 2 owns paths listed above.
+Do not modify open-node.ts, privacy.ts, privacy-index.ts, roots.ts, graph-data.ts, protocol.ts, extension.ts.
+Do not run yarn install, yarn build, yarn compile, or any network command.
+Do not run tsc WITHOUT --noEmit.
+Do not launch code-insiders.
+Do not use parseWebviewMessage from protocol.ts.
+Do not add new dependencies.
+Do not remove or modify handleActiveResourceChange, cutTitle, getGraphStyle, viewConfigToStyle, mergeStyles, resolveViewStyle, getNodeNavigationCommand, or the activate function.
+</forbidden_actions>
+
+<gates_ledger>
+logs/pdca/gates/lazarus-foam-vscode-ext/GATES.md
+</gates_ledger>
+
+<compact_output_contract>
+Lead with DONE or BLOCKED, then files changed, then checks run.
+Do not add extra prose.
+</compact_output_contract>

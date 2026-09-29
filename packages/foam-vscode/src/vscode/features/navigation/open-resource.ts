@@ -36,7 +36,7 @@ export interface OpenResourceArgs {
 }
 
 export const OPEN_COMMAND = {
-  command: 'foam-vscode.open-resource',
+  command: 'pa-hub.open-resource',
   title: 'Foam: Open Resource',
 
   forURI: (uri: URI): CommandDescriptor<OpenResourceArgs> => {

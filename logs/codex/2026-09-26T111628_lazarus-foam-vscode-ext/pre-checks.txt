@@ -1,0 +1,21 @@
+# PRE-DISPATCH
+
+$ python3 /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N11b_1.py
+exit: 1
+--- stdout ---
+FAIL k_N11b_1 index.ts missing resolveNodeOpen import/usage
+FAIL k_N11b_1 index.ts missing createPrivacyPolicy import/usage
+FAIL k_N11b_1 index.ts missing PrivacyPolicy reference
+FAIL k_N11b_1 index.ts still uses workspace.get (throws on stale mapping)
+--- stderr ---
+
+
+$ bash /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N11b_2.sh
+exit: 0
+--- stdout ---
+JSON report written to /tmp/pa_hub_gate_n11b_gv_vitest.json
+JSON report written to /tmp/pa_hub_gate_n11b_on_vitest.json
+PASS k_N11b_2 graph_view=16 open_node=6 tsc=0 oxlint=0 regressions=ok
+--- stderr ---
+
+

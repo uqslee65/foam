@@ -1,0 +1,18 @@
+# EVIDENCE — host-executed. This is the verdict.
+
+$ python3 /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N07_1.py
+exit: 0
+--- stdout ---
+PASS k_N07_1 roots=True gdata=True test=True tsc=0
+--- stderr ---
+
+
+$ bash /Users/slee65/projects/export-setup/logs/pdca/gates/lazarus-foam-vscode-ext/checks/k_N07_2.sh
+exit: 0
+--- stdout ---
+JSON report written to /tmp/pa_hub_gate_n07_vitest.json
+JSON report written to /tmp/pa_hub_gate_n07_privacy_vitest.json
+PASS k_N07_2 vitest=14 privacy=19 tsc=0 vscode_import=clean
+--- stderr ---
+
+

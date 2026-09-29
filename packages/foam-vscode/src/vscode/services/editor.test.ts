@@ -9,8 +9,8 @@ describe('formatMarkdownTooltip', () => {
     expect(md.isTrusted).not.toBe(true);
     expect((md.isTrusted as any).enabledCommands).toEqual(
       expect.arrayContaining([
-        'foam-vscode.open-resource',
-        'foam-vscode.create-note',
+        'pa-hub.open-resource',
+        'pa-hub.create-note',
       ])
     );
   });
@@ -174,7 +174,7 @@ describe('pickTabUri', () => {
         // "Foam Graph" must not retarget the panels to the note `Graph.md`
         expect(
           pickTabUri(
-            { input: { viewType: 'foam-graph' }, label: 'Foam Graph' },
+            { input: { viewType: 'pa-hub.graph' }, label: 'Foam Graph' },
             undefined,
             wsWithGraph
           )
@@ -230,7 +230,7 @@ describe('pickTabUri', () => {
 
       it('does not apply the visible-editor fallback to unrelated webview tabs', () => {
         const otherWebview = {
-          input: { viewType: 'foam-graph' },
+          input: { viewType: 'pa-hub.graph' },
           label: 'Foam Graph',
         };
         expect(
