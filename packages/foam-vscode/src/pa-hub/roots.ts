@@ -25,12 +25,13 @@ export function classifyRoots(
   workspaceRoots: URI[],
   classification?: Map<URI, RootKind>
 ): RootClassification {
+  const classificationByUri = new Map<string, RootKind>();
+  classification?.forEach((kind, uri) =>
+    classificationByUri.set(uri.toString(), kind)
+  );
+
   const roots = workspaceRoots.map((uri, index): ClassifiedRoot => {
-    const mappedKind =
-      classification?.get(uri) ??
-      [...(classification?.entries() ?? [])].find(([classifiedUri]) =>
-        classifiedUri.isEqual(uri)
-      )?.[1];
+    const mappedKind = classificationByUri.get(uri.toString());
     return {
       uri,
       kind: mappedKind ?? (index === 0 ? 'vault' : 'sources'),
