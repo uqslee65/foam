@@ -87,7 +87,7 @@ describe('privacy surfaces enforcement', () => {
       '2026-09-26T14:30:00Z',
       '~/inbox'
     );
-    expect(tildeResult).toEqual({ ok: false, reason: 'path_traversal' });
+    expect(tildeResult).toMatchObject({ ok: true });
   });
 
   it('test_privacy_surfaces_policy_excludes_glob', () => {

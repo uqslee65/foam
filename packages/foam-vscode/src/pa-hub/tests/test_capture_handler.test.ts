@@ -70,14 +70,14 @@ describe('pa-hub capture handler', () => {
       const files = await fs.readdir(inboxDir);
       expect(files).toHaveLength(1);
       expect(files[0]).toMatch(
-        /^\d{4}-\d{2}-\d{2}-\d{6}-absolute-task-capture-[a-z0-9]{4}\.md$/
+        /^\d{4}-\d{2}-\d{2}-\d{6}-absolute-task-capture-[a-z0-9]{8,}\.md$/
       );
       await expect(
         fs.readFile(path.join(inboxDir, files[0]), 'utf8')
       ).resolves.toContain('title: Absolute Task Capture');
       expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
         expect.stringMatching(
-          /^Captured: .*absolute-task-capture-[a-z0-9]{4}\.md$/
+          /^Captured: .*absolute-task-capture-[a-z0-9]{8,}\.md$/
         )
       );
     } finally {

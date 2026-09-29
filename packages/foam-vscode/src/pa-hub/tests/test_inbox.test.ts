@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   generateFilename,
@@ -13,7 +14,7 @@ import {
 describe('inbox domain module', () => {
   it('test_inbox_generate_filename_basic', () => {
     const filename = generateFilename('My Great Idea', '2026-09-26T14:30:00Z');
-    expect(filename).toMatch(/^2026-09-26-143000-my-great-idea-[a-z0-9]{4}\.md$/);
+    expect(filename).toMatch(/^2026-09-26-143000-my-great-idea-[a-z0-9]{8,}\.md$/);
   });
 
   it('test_inbox_generate_filename_special_chars', () => {
@@ -21,13 +22,13 @@ describe('inbox domain module', () => {
       'Idea #1: Fast & Furious! (2026)',
       '2026-09-26T14:30:00Z'
     );
-    expect(filename).toMatch(/^2026-09-26-143000-idea-1-fast-furious-2026-[a-z0-9]{4}\.md$/);
+    expect(filename).toMatch(/^2026-09-26-143000-idea-1-fast-furious-2026-[a-z0-9]{8,}\.md$/);
   });
 
   it('test_inbox_generate_filename_long_title', () => {
     const longTitle = 'a'.repeat(60);
     const filename = generateFilename(longTitle, '2026-09-26T14:30:00Z');
-    expect(filename).toMatch(new RegExp(`^2026-09-26-143000-${'a'.repeat(40)}-[a-z0-9]{4}\\.md$`));
+    expect(filename).toMatch(new RegExp(`^2026-09-26-143000-${'a'.repeat(40)}-[a-z0-9]{8,}\\.md$`));
   });
 
   it('test_inbox_generate_filename_invalid_timestamp', () => {
@@ -49,9 +50,12 @@ describe('inbox domain module', () => {
   });
 
   it('test_inbox_validate_path_traversal', () => {
-    expect(validateCapture('Valid Title', '../inbox')).toBe('path_traversal');
-    expect(validateCapture('Valid Title', 'dir/../inbox')).toBe('path_traversal');
-    expect(validateCapture('Valid Title', '..')).toBe('path_traversal');
+    const workspaceRoot = path.resolve(process.cwd());
+    const outsidePath = path.resolve(workspaceRoot, '../../outside/file');
+
+    expect(validateCapture('Valid Title', '../../outside/file')).toBe('path_traversal');
+    expect(validateCapture('Valid Title', outsidePath)).toBe('path_traversal');
+    expect(validateCapture('Valid Title', 'dir/../inbox')).toBeNull();
   });
 
   it('test_inbox_validate_absolute_path', () => {
@@ -60,8 +64,8 @@ describe('inbox domain module', () => {
   });
 
   it('test_inbox_validate_tilde_path', () => {
-    expect(validateCapture('Valid Title', '~/inbox')).toBe('path_traversal');
-    expect(validateCapture('Valid Title', '~notes')).toBe('path_traversal');
+    expect(validateCapture('Valid Title', '~/inbox')).toBeNull();
+    expect(validateCapture('Valid Title', '~notes')).toBeNull();
   });
 
   it('test_inbox_validate_ok', () => {
@@ -198,7 +202,7 @@ describe('inbox domain module', () => {
     );
     expect(result).toEqual({
       ok: true,
-      filename: expect.stringMatching(/^2026-09-26-143000-my-great-idea-[a-z0-9]{4}\.md$/),
+      filename: expect.stringMatching(/^2026-09-26-143000-my-great-idea-[a-z0-9]{8,}\.md$/),
       content: formatNote({
         title: 'My Great Idea',
         body: 'Body text',

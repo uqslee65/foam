@@ -152,20 +152,20 @@ describe('task snapshot', () => {
     expect(snapshot.tasks.every(task => !task.ambiguousId)).toBe(true);
   });
 
-  it('test_task_snapshot_no_valid_file', () => {
+  it('test_task_snapshot_no_valid_file', async () => {
     expect(
-      snapshotFromFiles(
+      await snapshotFromFiles(
         ['README.md', 'notes.txt'],
-        () => '- [ ] ignored',
+        () => Promise.resolve(null),
         () => 'rev-1'
       )
     ).toEqual({ ok: false, reason: 'no_valid_file' });
   });
 
-  it('test_task_snapshot_full_round_trip', () => {
-    const result = snapshotFromFiles(
+  it('test_task_snapshot_full_round_trip', async () => {
+    const result = await snapshotFromFiles(
       ['README.md', '2026-09-20.md', '2026-09-23.md'],
-      filename =>
+      async filename =>
         filename === '2026-09-23.md'
           ? '- [ ] New task <!-- id:t-new -->\n- [x] Done task'
           : null,

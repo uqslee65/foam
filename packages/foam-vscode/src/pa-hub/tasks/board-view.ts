@@ -3,37 +3,44 @@ import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { snapshotToBoardData, buildBoardHtml } from './board';
-import { snapshotFromFiles, type TaskSnapshot } from './snapshot';
+import {
+  selectNewestDailyFile,
+  snapshotFromFiles,
+  type TaskSnapshot,
+} from './snapshot';
 import { createTaskWriter, type TaskWriteFs, type TaskWriter } from './write';
+
+function isFileNotFoundError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === 'ENOENT'
+  );
+}
 
 async function loadSnapshot(dir: string): Promise<TaskSnapshot | null> {
   try {
     const filenames = await fs.promises.readdir(dir);
-    const contents = new Map<string, string | null>();
-    const revisions = new Map<string, string>();
+    const filename = selectNewestDailyFile(filenames);
+    if (filename === null) return null;
 
-    await Promise.all(
-      filenames.map(async filename => {
-        try {
-          const [content, fileStat] = await Promise.all([
-            fs.promises.readFile(path.join(dir, filename), 'utf-8'),
-            fs.promises.stat(path.join(dir, filename)),
-          ]);
-          contents.set(filename, content);
-          revisions.set(filename, String(fileStat.mtimeMs));
-        } catch {
-          contents.set(filename, null);
-        }
-      })
-    );
+    const filePath = path.join(dir, filename);
+    const [content, fileStat] = await Promise.all([
+      fs.promises.readFile(filePath, 'utf-8'),
+      fs.promises.stat(filePath),
+    ]);
 
-    const result = snapshotFromFiles(
+    const result = await snapshotFromFiles(
       filenames,
-      filename => contents.get(filename) ?? null,
-      filename => revisions.get(filename) ?? ''
+      async candidate => (candidate === filename ? content : null),
+      candidate => (candidate === filename ? String(fileStat.mtimeMs) : '')
     );
     return result.ok ? result.snapshot : null;
-  } catch {
+  } catch (error) {
+    if (!isFileNotFoundError(error)) {
+      console.error(error);
+    }
     return null;
   }
 }

@@ -7,11 +7,7 @@ import {
   type TaskTreeElement,
 } from './tree';
 import { snapshotFromFiles, type TaskSnapshot } from './snapshot';
-import {
-  createTaskWriter,
-  type TaskWriteFs,
-  type TaskWriter,
-} from './write';
+import { createTaskWriter, type TaskWriteFs, type TaskWriter } from './write';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
@@ -36,9 +32,9 @@ async function loadSnapshot(dir: string): Promise<TaskSnapshot | null> {
       })
     );
 
-    const result = snapshotFromFiles(
+    const result = await snapshotFromFiles(
       filenames,
-      filename => contents.get(filename) ?? null,
+      async filename => contents.get(filename) ?? null,
       filename => revisions.get(filename) ?? ''
     );
     return result.ok ? result.snapshot : null;
@@ -125,22 +121,30 @@ export function activateTasksTree(
 
   treeView.onDidChangeCheckboxState(event => {
     void enqueueMutation(async () => {
+      const snapshot = currentSnapshot;
+      if (!snapshot) return;
+
+      let mutationSnapshot = snapshot;
+      let mutated = false;
       for (const [item, state] of event.items) {
         if (item.kind !== 'item') continue;
-        const snapshot = currentSnapshot;
-        if (!snapshot) continue;
 
         const checked = state === vscode.TreeItemCheckboxState.Checked;
         const result = await writer.toggle(
           tasksDir,
-          snapshot,
+          mutationSnapshot,
           item.identity,
           checked
         );
         if (result.ok) {
-          currentSnapshot = await loadSnapshot(tasksDir);
-          if (currentSnapshot) tree.refresh(currentSnapshot);
+          mutationSnapshot = { ...mutationSnapshot, revision: result.revision };
+          mutated = true;
         }
+      }
+
+      if (mutated) {
+        currentSnapshot = await loadSnapshot(tasksDir);
+        if (currentSnapshot) tree.refresh(currentSnapshot);
       }
     }).catch(error => console.error(error));
   });
@@ -157,46 +161,68 @@ export function activateTasksTree(
   }
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('pa-hub.task-move-up', (node: TaskItemNode) => {
-      if (!node?.identity) return;
-      return enqueueMutation(() =>
-        mutateAndRefresh(snap => writer.move(tasksDir, snap, node.identity, 'up'))
-      );
-    }),
-    vscode.commands.registerCommand('pa-hub.task-move-down', (node: TaskItemNode) => {
-      if (!node?.identity) return;
-      return enqueueMutation(() =>
-        mutateAndRefresh(snap => writer.move(tasksDir, snap, node.identity, 'down'))
-      );
-    }),
-    vscode.commands.registerCommand('pa-hub.task-set-quadrant', async (node: TaskItemNode) => {
-      if (!node?.identity) return;
-      const pick = await vscode.window.showQuickPick(
-        ['Q1', 'Q2', 'Q3', 'Q4'],
-        { placeHolder: 'Assign quadrant' }
-      );
-      if (!pick) return;
-      return enqueueMutation(() =>
-        mutateAndRefresh(snap =>
-          writer.setQuadrant(tasksDir, snap, node.identity, pick)
-        )
-      );
-    }),
-    vscode.commands.registerCommand('pa-hub.task-dispatch', (node: TaskItemNode) => {
-      if (!node?.identity) return;
-      if (!currentSnapshot) return;
-      const task = currentSnapshot.tasks.find(t => t.identity === node.identity);
-      const slug = task?.meta.pdca;
-      if (!slug) {
-        vscode.window.showInformationMessage('No PDCA cycle linked. Add pdca:<slug> to task metadata.');
-        return;
+    vscode.commands.registerCommand(
+      'pa-hub.task-move-up',
+      (node: TaskItemNode) => {
+        if (!node?.identity) return;
+        return enqueueMutation(() =>
+          mutateAndRefresh(snap =>
+            writer.move(tasksDir, snap, node.identity, 'up')
+          )
+        );
       }
-      const terminal = vscode.window.createTerminal({ name: `dispatch: ${slug}` });
-      terminal.sendText(
-        `cd ~/projects/export-setup && bash scripts/pal_dispatch.sh -b -m gemini-3.8-flash --slug ${slug}`
-      );
-      terminal.show();
-    })
+    ),
+    vscode.commands.registerCommand(
+      'pa-hub.task-move-down',
+      (node: TaskItemNode) => {
+        if (!node?.identity) return;
+        return enqueueMutation(() =>
+          mutateAndRefresh(snap =>
+            writer.move(tasksDir, snap, node.identity, 'down')
+          )
+        );
+      }
+    ),
+    vscode.commands.registerCommand(
+      'pa-hub.task-set-quadrant',
+      async (node: TaskItemNode) => {
+        if (!node?.identity) return;
+        const pick = await vscode.window.showQuickPick(
+          ['Q1', 'Q2', 'Q3', 'Q4'],
+          { placeHolder: 'Assign quadrant' }
+        );
+        if (!pick) return;
+        return enqueueMutation(() =>
+          mutateAndRefresh(snap =>
+            writer.setQuadrant(tasksDir, snap, node.identity, pick)
+          )
+        );
+      }
+    ),
+    vscode.commands.registerCommand(
+      'pa-hub.task-dispatch',
+      (node: TaskItemNode) => {
+        if (!node?.identity) return;
+        if (!currentSnapshot) return;
+        const task = currentSnapshot.tasks.find(
+          t => t.identity === node.identity
+        );
+        const slug = task?.meta.pdca;
+        if (!slug) {
+          vscode.window.showInformationMessage(
+            'No PDCA cycle linked. Add pdca:<slug> to task metadata.'
+          );
+          return;
+        }
+        const terminal = vscode.window.createTerminal({
+          name: `dispatch: ${slug}`,
+        });
+        terminal.sendText(
+          `cd ~/projects/export-setup && bash scripts/pal_dispatch.sh -b -m gemini-3.8-flash --slug ${slug}`
+        );
+        terminal.show();
+      }
+    )
   );
 
   async function refreshFromDisk(): Promise<void> {
