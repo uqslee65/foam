@@ -166,14 +166,14 @@ describe('live Codex and Agy usage polling', () => {
     await Promise.resolve();
 
     expect(mocks.codexRefresh).toHaveBeenCalledTimes(1);
-    expect(mocks.readdirSync).toHaveBeenCalledTimes(1);
+    expect(mocks.readdirSync).toHaveBeenCalledTimes(2);
     vi.advanceTimersByTime(29_999);
     expect(mocks.codexRefresh).toHaveBeenCalledTimes(1);
 
     vi.advanceTimersByTime(1);
     await Promise.resolve();
     expect(mocks.codexRefresh).toHaveBeenCalledTimes(2);
-    expect(mocks.readdirSync).toHaveBeenCalledTimes(2);
+    expect(mocks.readdirSync).toHaveBeenCalledTimes(3);
   });
 
   it('refreshes usage once for each 30-second interval', () => {
