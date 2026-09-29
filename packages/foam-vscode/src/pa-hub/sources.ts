@@ -14,6 +14,8 @@ export interface SourceEntry {
 
 export type SourceElement = SourceTopic | SourceEntry;
 
+type MaybePromise<T> = T | PromiseLike<T>;
+
 export interface ParsedTopic {
   readonly label: string;
   readonly entries: readonly { relativePath: string; label: string }[];
@@ -59,9 +61,9 @@ export function parseIndex(content: string): readonly ParsedTopic[] {
 export interface SourceTree {
   refresh(
     topics: readonly ParsedTopic[],
-    fileExists: (relativePath: string) => boolean,
+    fileExists: (relativePath: string) => MaybePromise<boolean>,
     isPermitted: (relativePath: string) => boolean
-  ): void;
+  ): Promise<void>;
   getChildren(element?: SourceElement): readonly SourceElement[];
   onDidChange(listener: () => void): { dispose(): void };
 }
@@ -72,34 +74,68 @@ export function createSourceTree(): SourceTree {
 
   function refresh(
     topics: readonly ParsedTopic[],
-    fileExists: (relativePath: string) => boolean,
+    fileExists: (relativePath: string) => MaybePromise<boolean>,
     isPermitted: (relativePath: string) => boolean
-  ): void {
-    groups.clear();
+  ): Promise<void> {
+    const nextGroups = new Map<string, Array<SourceEntry | PromiseLike<SourceEntry | null>>>();
+    let hasAsyncChecks = false;
+
     for (const topic of topics) {
-      const entries: SourceEntry[] = [];
+      const entries = nextGroups.get(topic.label) ?? [];
+      nextGroups.set(topic.label, entries);
+
       for (const entry of topic.entries) {
         if (!isPermitted(entry.relativePath)) {
           continue;
         }
-        entries.push({
-          kind: 'entry',
-          label: entry.label,
-          relativePath: entry.relativePath,
-          broken: !fileExists(entry.relativePath),
-          topic: topic.label,
-        });
-      }
-      const existing = groups.get(topic.label);
-      if (existing) {
-        existing.push(...entries);
-      } else {
-        groups.set(topic.label, entries);
+
+        const exists = fileExists(entry.relativePath);
+        if (typeof exists === 'object' && exists !== null && 'then' in exists) {
+          hasAsyncChecks = true;
+          entries.push(
+            Promise.resolve(exists).then(fileExists => ({
+              kind: 'entry',
+              label: entry.label,
+              relativePath: entry.relativePath,
+              broken: !fileExists,
+              topic: topic.label,
+            }))
+          );
+        } else {
+          entries.push({
+            kind: 'entry',
+            label: entry.label,
+            relativePath: entry.relativePath,
+            broken: !exists,
+            topic: topic.label,
+          });
+        }
       }
     }
-    for (const listener of listeners) {
-      listener();
+
+    const publish = (resolvedGroups: Map<string, SourceEntry[]>): void => {
+      groups.clear();
+      for (const [label, entries] of resolvedGroups) {
+        groups.set(label, entries);
+      }
+      for (const listener of listeners) {
+        listener();
+      }
+    };
+
+    if (!hasAsyncChecks) {
+      publish(nextGroups as Map<string, SourceEntry[]>);
+      return Promise.resolve();
     }
+
+    return Promise.all(
+      [...nextGroups].map(async ([label, entries]) => {
+        const resolvedEntries = await Promise.all(entries);
+        return [label, resolvedEntries.filter((entry): entry is SourceEntry => entry !== null)] as const;
+      })
+    ).then(resolvedGroups => {
+      publish(new Map(resolvedGroups));
+    });
   }
 
   function getChildren(element?: SourceElement): readonly SourceElement[] {

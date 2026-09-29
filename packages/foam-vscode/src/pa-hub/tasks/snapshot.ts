@@ -160,7 +160,7 @@ export function createSnapshot(
     return {
       ...task,
       identity: task.id,
-      ambiguousId: idCounts.get(task.id)! > 1,
+      ambiguousId: (idCounts.get(task.id) ?? 0) > 1,
     };
   });
 

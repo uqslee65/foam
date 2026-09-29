@@ -8,7 +8,7 @@ import { createPrivacyPolicy } from '../privacy';
 
 const mocks = vi.hoisted(() => ({
   codexRefresh: vi.fn(),
-  readdirSync: vi.fn(),
+  readdir: vi.fn(),
   readClaudeUsage: vi.fn(),
   resolveClaudeStateDir: vi.fn(),
   watchClaudeUsage: vi.fn(),
@@ -37,13 +37,16 @@ vi.mock('../tasks/board-view', () => ({
 
 vi.mock('node:fs', async importOriginal => {
   const actual = await importOriginal<typeof import('node:fs')>();
-  mocks.readdirSync.mockImplementation(
-    (...args: Parameters<typeof actual.readdirSync>) =>
-      actual.readdirSync(...args)
+  mocks.readdir.mockImplementation(
+    (...args: Parameters<typeof actual.promises.readdir>) =>
+      actual.promises.readdir(...args)
   );
   return {
     ...actual,
-    readdirSync: mocks.readdirSync,
+    promises: {
+      ...actual.promises,
+      readdir: mocks.readdir,
+    },
   };
 });
 
@@ -166,14 +169,14 @@ describe('live Codex and Agy usage polling', () => {
     await Promise.resolve();
 
     expect(mocks.codexRefresh).toHaveBeenCalledTimes(1);
-    expect(mocks.readdirSync).toHaveBeenCalledTimes(2);
+    expect(mocks.readdir).toHaveBeenCalledTimes(1);
     vi.advanceTimersByTime(29_999);
     expect(mocks.codexRefresh).toHaveBeenCalledTimes(1);
 
     vi.advanceTimersByTime(1);
     await Promise.resolve();
     expect(mocks.codexRefresh).toHaveBeenCalledTimes(2);
-    expect(mocks.readdirSync).toHaveBeenCalledTimes(3);
+    expect(mocks.readdir).toHaveBeenCalledTimes(1);
   });
 
   it('refreshes usage once for each 30-second interval', () => {
