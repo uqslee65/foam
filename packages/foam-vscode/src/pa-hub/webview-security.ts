@@ -23,8 +23,13 @@ export function fillGraphHtml(
   return withSecurity.replace(
     /data-replace (src|href)="[^"]+"/g,
     match => {
-      const [, attribute, filename] =
-        /^data-replace (src|href)="([^"]+)"$/.exec(match)!;
+      const replacementMatch =
+        /^data-replace (src|href)="([^"]+)"$/.exec(match);
+      if (!replacementMatch) {
+        return match;
+      }
+
+      const [, attribute, filename] = replacementMatch;
       return `${attribute}="${params.resolveAsset(filename)}"`;
     }
   );
