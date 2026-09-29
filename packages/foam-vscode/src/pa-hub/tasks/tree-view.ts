@@ -149,12 +149,15 @@ export function activateTasksTree(
 
   context.subscriptions.push(
     vscode.commands.registerCommand('pa-hub.task-move-up', (node: TaskItemNode) => {
+      if (!node?.identity) return;
       return mutateAndRefresh(snap => writer.move(tasksDir, snap, node.identity, 'up'));
     }),
     vscode.commands.registerCommand('pa-hub.task-move-down', (node: TaskItemNode) => {
+      if (!node?.identity) return;
       return mutateAndRefresh(snap => writer.move(tasksDir, snap, node.identity, 'down'));
     }),
     vscode.commands.registerCommand('pa-hub.task-set-quadrant', async (node: TaskItemNode) => {
+      if (!node?.identity) return;
       const pick = await vscode.window.showQuickPick(
         ['Q1', 'Q2', 'Q3', 'Q4'],
         { placeHolder: 'Assign quadrant' }
@@ -163,6 +166,7 @@ export function activateTasksTree(
       return mutateAndRefresh(snap => writer.setQuadrant(tasksDir, snap, node.identity, pick));
     }),
     vscode.commands.registerCommand('pa-hub.task-dispatch', (node: TaskItemNode) => {
+      if (!node?.identity) return;
       if (!currentSnapshot) return;
       const task = currentSnapshot.tasks.find(t => t.identity === node.identity);
       const slug = task?.meta.pdca;

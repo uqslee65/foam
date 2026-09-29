@@ -13,7 +13,7 @@ import {
 describe('inbox domain module', () => {
   it('test_inbox_generate_filename_basic', () => {
     const filename = generateFilename('My Great Idea', '2026-09-26T14:30:00Z');
-    expect(filename).toBe('2026-09-26-143000-my-great-idea.md');
+    expect(filename).toMatch(/^2026-09-26-143000-my-great-idea-[a-z0-9]{4}\.md$/);
   });
 
   it('test_inbox_generate_filename_special_chars', () => {
@@ -21,13 +21,13 @@ describe('inbox domain module', () => {
       'Idea #1: Fast & Furious! (2026)',
       '2026-09-26T14:30:00Z'
     );
-    expect(filename).toBe('2026-09-26-143000-idea-1-fast-furious-2026.md');
+    expect(filename).toMatch(/^2026-09-26-143000-idea-1-fast-furious-2026-[a-z0-9]{4}\.md$/);
   });
 
   it('test_inbox_generate_filename_long_title', () => {
     const longTitle = 'a'.repeat(60);
     const filename = generateFilename(longTitle, '2026-09-26T14:30:00Z');
-    expect(filename).toBe(`2026-09-26-143000-${'a'.repeat(40)}.md`);
+    expect(filename).toMatch(new RegExp(`^2026-09-26-143000-${'a'.repeat(40)}-[a-z0-9]{4}\\.md$`));
   });
 
   it('test_inbox_generate_filename_invalid_timestamp', () => {
@@ -198,7 +198,7 @@ describe('inbox domain module', () => {
     );
     expect(result).toEqual({
       ok: true,
-      filename: '2026-09-26-143000-my-great-idea.md',
+      filename: expect.stringMatching(/^2026-09-26-143000-my-great-idea-[a-z0-9]{4}\.md$/),
       content: formatNote({
         title: 'My Great Idea',
         body: 'Body text',

@@ -73,7 +73,7 @@ export function generateFilename(title: string, timestamp: string): string {
     return '';
   }
   const slug = toSlug(title);
-  return `${parsed.datePart}-${parsed.timePart}-${slug}.md`;
+  return `${parsed.datePart}-${parsed.timePart}-${slug}-${Math.random().toString(36).slice(2, 6)}.md`;
 }
 
 export function validateCapture(title: string, inboxDir: string): CaptureError | null {
