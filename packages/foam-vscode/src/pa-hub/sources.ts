@@ -40,14 +40,14 @@ export function parseIndex(content: string): readonly ParsedTopic[] {
       continue;
     }
 
-    const wikiMatches = line.matchAll(/\[\[([^\]]+)\]\]/g);
+    const wikiMatches = line.matchAll(/\[\[([^\[\]\r\n]+)\]\]/g);
     for (const match of wikiMatches) {
       const relativePath = match[1];
       const lastSlashIndex = relativePath.lastIndexOf('/');
       const label = lastSlashIndex >= 0 ? relativePath.slice(lastSlashIndex + 1) : relativePath;
       currentTopic.entries.push({ relativePath, label });
     }
-    const mdMatches = line.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g);
+    const mdMatches = line.matchAll(/\[([^\[\]\r\n]+)\]\(([^)\r\n]+)\)/g);
     for (const match of mdMatches) {
       const label = match[1];
       const relativePath = match[2];

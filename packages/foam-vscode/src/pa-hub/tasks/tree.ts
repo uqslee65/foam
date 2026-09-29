@@ -25,6 +25,7 @@ export interface TaskTree {
   refresh(snapshot: TaskSnapshot): void;
   getChildren(element?: TaskTreeElement): readonly TaskTreeElement[];
   onDidChange(listener: () => void): { dispose(): void };
+  dispose(): void;
 }
 
 const QUADRANT_LABELS: Record<string, string> = {
@@ -37,6 +38,7 @@ const QUADRANT_LABELS: Record<string, string> = {
 export function createTaskTree(): TaskTree {
   const groups = new Map<string, TaskItemNode[]>();
   const listeners = new Set<() => void>();
+  const disposables: { dispose(): void }[] = [];
 
   function refresh(snapshot: TaskSnapshot): void {
     groups.clear();
@@ -83,8 +85,23 @@ export function createTaskTree(): TaskTree {
 
   function onDidChange(listener: () => void): { dispose(): void } {
     listeners.add(listener);
-    return { dispose: () => listeners.delete(listener) };
+    let disposed = false;
+    const disposable = {
+      dispose(): void {
+        if (disposed) return;
+        disposed = true;
+        listeners.delete(listener);
+      },
+    };
+    disposables.push(disposable);
+    return disposable;
   }
 
-  return { refresh, getChildren, onDidChange };
+  function dispose(): void {
+    for (const disposable of disposables.splice(0)) {
+      disposable.dispose();
+    }
+  }
+
+  return { refresh, getChildren, onDidChange, dispose };
 }

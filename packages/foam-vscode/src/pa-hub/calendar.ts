@@ -104,8 +104,14 @@ export function eventsForRange(
   startDate: string,
   days: number
 ): CalendarEvent[] {
-  const endDate = new Date(`${startDate}T00:00:00Z`);
-  endDate.setUTCDate(endDate.getUTCDate() + days);
+  const startDateTime = new Date(`${startDate}T00:00:00Z`);
+  const endDate = new Date(
+    Date.UTC(
+      startDateTime.getUTCFullYear(),
+      startDateTime.getUTCMonth(),
+      startDateTime.getUTCDate() + days
+    )
+  );
   const end = endDate.toISOString().slice(0, 10);
 
   return events
@@ -159,7 +165,7 @@ export function createCalendarTree(): CalendarTree {
 
   function getChildren(element?: CalendarTreeElement): readonly CalendarTreeElement[] {
     if (element === undefined) {
-      return [...groups.keys()].map(date => ({
+      return [...groups.keys()].sort().map(date => ({
         kind: 'date-group' as const,
         date,
         label: formatGroupLabel(date),

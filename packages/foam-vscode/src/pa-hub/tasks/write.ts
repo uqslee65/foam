@@ -200,67 +200,6 @@ export function createTaskWriter(fs: TaskWriteFs): TaskWriter {
     }
   }
 
-  async function doToggle(
-    dir: string,
-    snapshot: TaskSnapshot,
-    identity: string,
-    checked: boolean
-  ): Promise<WriteResult> {
-    const target = resolveToggleTarget(snapshot, identity);
-    if (target.ok === false) {
-      return { ok: false, reason: target.reason };
-    }
-
-    const filenames = await fs.listDir(dir);
-    const filename = selectNewestDailyFile(filenames);
-    if (filename === null) {
-      return { ok: false, reason: 'no_valid_file' };
-    }
-
-    if (filename !== snapshot.filename) {
-      return { ok: false, reason: 'latest_changed' };
-    }
-
-    const targetPath = dir + '/' + filename;
-    const firstStat = await fs.stat(targetPath);
-    if (firstStat === null) {
-      return { ok: false, reason: 'io_error' };
-    }
-
-    if (firstStat.revision !== snapshot.revision) {
-      return { ok: false, reason: 'stale_revision' };
-    }
-
-    const content = await fs.readFile(targetPath);
-    if (content === null) {
-      return { ok: false, reason: 'io_error' };
-    }
-
-    const mutation = applyCheckboxToggle(content, target.task, checked);
-    if (!mutation.ok) {
-      return { ok: false, reason: 'stale_line' };
-    }
-
-    const tmpPath = dir + '/.' + filename + '.tmp';
-    let renamed = false;
-    try {
-      await fs.writeFile(tmpPath, mutation.content, firstStat.mode);
-
-      const secondStat = await fs.stat(targetPath);
-      if (secondStat === null || secondStat.revision !== firstStat.revision) {
-        return { ok: false, reason: 'stale_revision' };
-      }
-
-      await fs.rename(tmpPath, targetPath);
-      renamed = true;
-      return { ok: true, revision: secondStat.revision };
-    } finally {
-      if (!renamed) {
-        await cleanupTmpFile(tmpPath);
-      }
-    }
-  }
-
   function enqueue(fn: () => Promise<WriteResult>): Promise<WriteResult> {
     const next = chain.then(fn).catch(error => {
       Logger.error('Task write failed', error);
@@ -272,7 +211,11 @@ export function createTaskWriter(fs: TaskWriteFs): TaskWriter {
 
   return {
     toggle(dir, snapshot, identity, checked) {
-      return enqueue(() => doToggle(dir, snapshot, identity, checked));
+      return enqueue(() =>
+        doMutate(dir, snapshot, identity, (content, task) =>
+          applyCheckboxToggle(content, task, checked)
+        )
+      );
     },
     move(dir, snapshot, identity, direction) {
       return enqueue(() =>

@@ -6,6 +6,21 @@ import type { NodeId } from '@foam/graph-view/protocol' with {
 };
 import type { DenyReason, PrivacyPolicy } from './privacy';
 
+function isDenyReason(value: unknown): value is DenyReason {
+  switch (value) {
+    case 'invalid_input':
+    case 'encoded_path':
+    case 'lookalike_path':
+    case 'relative_path':
+    case 'outside_roots':
+    case 'mandatory_exclusion':
+    case 'configured_exclusion':
+      return true;
+    default:
+      return false;
+  }
+}
+
 export type OpenNodeDeny =
   | { allowed: false; reason: 'invalid_id' }
   | { allowed: false; reason: 'unknown_id'; nodeId: NodeId }
@@ -58,7 +73,9 @@ export function resolveNodeOpen(
       reason: 'privacy_denied',
       nodeId: payload,
       uri,
-      denyReason: decision.reason as DenyReason,
+      denyReason: isDenyReason(decision.reason)
+        ? decision.reason
+        : 'invalid_input',
     };
   }
 
