@@ -400,7 +400,8 @@ export function activatePaHub(
   (pollingInterval as unknown as { unref?: () => void }).unref?.();
 
   // 5. Inbox capture
-  const inboxDir = path.join(tasksDir, '..', 'inbox');
+  const inboxIdentifier = 'inbox';
+  const inboxDir = path.resolve(tasksDir, '..', inboxIdentifier);
   const captureCommand = vscode.commands.registerCommand(
     'pa-hub.capture',
     async () => {
@@ -421,7 +422,7 @@ export function activatePaHub(
         body,
         null,
         new Date().toISOString(),
-        inboxDir
+        inboxIdentifier
       );
       if (result.ok) {
         await fs.promises.mkdir(inboxDir, { recursive: true });

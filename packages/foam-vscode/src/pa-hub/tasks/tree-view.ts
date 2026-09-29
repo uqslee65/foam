@@ -149,10 +149,10 @@ export function activateTasksTree(
 
   context.subscriptions.push(
     vscode.commands.registerCommand('pa-hub.task-move-up', (node: TaskItemNode) => {
-      mutateAndRefresh(snap => writer.move(tasksDir, snap, node.identity, 'up'));
+      return mutateAndRefresh(snap => writer.move(tasksDir, snap, node.identity, 'up'));
     }),
     vscode.commands.registerCommand('pa-hub.task-move-down', (node: TaskItemNode) => {
-      mutateAndRefresh(snap => writer.move(tasksDir, snap, node.identity, 'down'));
+      return mutateAndRefresh(snap => writer.move(tasksDir, snap, node.identity, 'down'));
     }),
     vscode.commands.registerCommand('pa-hub.task-set-quadrant', async (node: TaskItemNode) => {
       const pick = await vscode.window.showQuickPick(
@@ -160,7 +160,7 @@ export function activateTasksTree(
         { placeHolder: 'Assign quadrant' }
       );
       if (!pick) return;
-      mutateAndRefresh(snap => writer.setQuadrant(tasksDir, snap, node.identity, pick));
+      return mutateAndRefresh(snap => writer.setQuadrant(tasksDir, snap, node.identity, pick));
     }),
     vscode.commands.registerCommand('pa-hub.task-dispatch', (node: TaskItemNode) => {
       if (!currentSnapshot) return;
