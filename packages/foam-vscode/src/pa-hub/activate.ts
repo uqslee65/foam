@@ -38,7 +38,6 @@ import {
   resolveCalendarFile,
   createCalendarTree,
   type CalendarTreeElement,
-  type CalendarGroupNode,
   type CalendarFile,
 } from './calendar';
 import type { PrivacyPolicy } from './privacy';

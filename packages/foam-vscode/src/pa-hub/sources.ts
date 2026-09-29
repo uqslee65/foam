@@ -1,5 +1,3 @@
-import type { PrivacyPolicy } from './privacy';
-
 export interface SourceTopic {
   readonly kind: 'topic';
   readonly label: string;
