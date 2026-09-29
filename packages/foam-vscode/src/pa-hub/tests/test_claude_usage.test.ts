@@ -285,9 +285,10 @@ describe('Claude usage sidecar', () => {
     fs.writeFileSync(path.join(fixtureRoot, RATE_LIMITS_FILE), '{nope');
     const state = readClaudeUsage(fixtureRoot);
     expect(state).toMatchObject({ status: 'invalid', reason: 'parse' });
-    if (state.status === 'invalid') {
-      expect(state.detail).toBeTruthy();
+    if (state.status !== 'invalid') {
+      throw new Error('expected invalid Claude usage state');
     }
+    expect(state.detail).toBeTruthy();
   });
 
   it('test_claude_usage_read_schema_error', () => {
@@ -308,9 +309,10 @@ describe('Claude usage sidecar', () => {
       staleAfterMs: 10_000,
     });
     expect(fresh.status).toBe('fresh');
-    if (fresh.status === 'fresh') {
-      expect(fresh.observation.ageMs).toBe(1000);
+    if (fresh.status !== 'fresh') {
+      throw new Error('expected fresh Claude usage state');
     }
+    expect(fresh.observation.ageMs).toBe(1000);
 
     fs.writeFileSync(
       file,
@@ -321,9 +323,10 @@ describe('Claude usage sidecar', () => {
       staleAfterMs: 10_000,
     });
     expect(stale.status).toBe('stale');
-    if (stale.status === 'stale') {
-      expect(stale.observation.ageMs).toBe(20_000);
+    if (stale.status !== 'stale') {
+      throw new Error('expected stale Claude usage state');
     }
+    expect(stale.observation.ageMs).toBe(20_000);
 
     fs.writeFileSync(
       file,
@@ -334,9 +337,10 @@ describe('Claude usage sidecar', () => {
       staleAfterMs: 10_000,
     });
     expect(clockSkew.status).toBe('fresh');
-    if (clockSkew.status === 'fresh') {
-      expect(clockSkew.observation.ageMs).toBe(0);
+    if (clockSkew.status !== 'fresh') {
+      throw new Error('expected fresh Claude usage state');
     }
+    expect(clockSkew.observation.ageMs).toBe(0);
   });
 
   it('test_claude_usage_read_only_touches_rate_limits_file', () => {

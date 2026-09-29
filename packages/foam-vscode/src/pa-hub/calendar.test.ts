@@ -42,10 +42,11 @@ describe('readCalendar', () => {
       );
       const result = readCalendar(filePath);
       expect(result.status).toBe('ok');
-      if (result.status === 'ok') {
-        expect(result.timezone).toBe('Australia/Brisbane');
-        expect(result.events).toHaveLength(1);
+      if (result.status !== 'ok') {
+        throw new Error('expected a valid calendar');
       }
+      expect(result.timezone).toBe('Australia/Brisbane');
+      expect(result.events).toHaveLength(1);
     } finally {
       fs.rmSync(tmpDir, { recursive: true });
     }
@@ -106,13 +107,14 @@ describe('createCalendarTree', () => {
       expect(roots).toHaveLength(1);
       const group = roots[0];
       expect(group.kind).toBe('date-group');
-      if (group.kind === 'date-group') {
-        expect(group.date).toBe('2026-08-26');
-        expect(group.count).toBe(1);
-        expect(group.label).toMatch(/^[A-Z][a-z]{2} \d{1,2} [A-Z][a-z]{2}$/);
-        const children = tree.getChildren(group);
-        expect(children).toHaveLength(1);
+      if (group.kind !== 'date-group') {
+        throw new Error('expected a date group');
       }
+      expect(group.date).toBe('2026-08-26');
+      expect(group.count).toBe(1);
+      expect(group.label).toMatch(/^[A-Z][a-z]{2} \d{1,2} [A-Z][a-z]{2}$/);
+      const children = tree.getChildren(group);
+      expect(children).toHaveLength(1);
     } finally {
       fs.rmSync(tmpDir, { recursive: true });
     }

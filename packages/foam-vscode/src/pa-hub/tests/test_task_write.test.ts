@@ -120,11 +120,12 @@ describe('task write', () => {
     const beforeLines = content.split('\n');
     const afterLines = result.content.split('\n');
     expect(afterLines[task.lineIndex]).toBe('- [x] Target task');
-    for (const [lineIndex, beforeLine] of beforeLines.entries()) {
-      if (lineIndex !== task.lineIndex) {
-        expect(afterLines[lineIndex]).toBe(beforeLine);
-      }
-    }
+    const unchangedAfterLines = beforeLines
+      .map((_, lineIndex) => afterLines[lineIndex])
+      .filter((_, lineIndex) => lineIndex !== task.lineIndex);
+    expect(unchangedAfterLines).toEqual(
+      beforeLines.filter((_, lineIndex) => lineIndex !== task.lineIndex)
+    );
   });
 });
 
