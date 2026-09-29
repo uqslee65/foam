@@ -156,7 +156,7 @@ export function watchFocusFile(
   const seen = new Set<string>();
   let watcher: { close(): void } | undefined;
   let reattachTimer: ReturnType<typeof setTimeout> | undefined;
-  let disposed = false;
+  let _disposed = false;
   let reading = false;
 
   async function readRequest(startup: boolean): Promise<void> {
@@ -175,7 +175,7 @@ export function watchFocusFile(
     const result = parseFocusFilePayload(parsed, {
       workspaceId: options.workspaceId,
     });
-    if (!result.ok || disposed) {
+    if (!result.ok || _disposed) {
       return;
     }
 
@@ -194,7 +194,7 @@ export function watchFocusFile(
   }
 
   function readOnChange(): void {
-    if (disposed || reading) {
+    if (_disposed || reading) {
       return;
     }
 
@@ -207,11 +207,16 @@ export function watchFocusFile(
   }
 
   function scheduleReattach(): void {
-    if (disposed || reattachTimer !== undefined) {
+    if (_disposed || reattachTimer !== undefined) {
       return;
     }
 
     const timer = setTimeout(() => {
+      if (_disposed) {
+        reattachTimer = undefined;
+        return;
+      }
+
       reattachTimer = undefined;
       attachWatcher();
     }, focusWatchReattachDelayMs);
@@ -223,7 +228,7 @@ export function watchFocusFile(
   }
 
   function handleWatcherError(_error: unknown): void {
-    if (disposed) {
+    if (_disposed) {
       return;
     }
 
@@ -233,7 +238,7 @@ export function watchFocusFile(
   }
 
   function attachWatcher(): void {
-    if (disposed) {
+    if (_disposed) {
       return;
     }
 
@@ -259,7 +264,7 @@ export function watchFocusFile(
 
   return {
     dispose(): void {
-      disposed = true;
+      _disposed = true;
       watcher?.close();
       watcher = undefined;
       if (reattachTimer !== undefined) {

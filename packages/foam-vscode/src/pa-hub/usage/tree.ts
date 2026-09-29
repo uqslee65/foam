@@ -284,6 +284,7 @@ export interface UsageTree {
   ): void;
   getChildren(element?: UsageTreeElement): readonly UsageTreeElement[];
   onDidChange(listener: () => void): { dispose(): void };
+  dispose(): void;
 }
 
 export function createUsageTree(): UsageTree {
@@ -292,6 +293,7 @@ export function createUsageTree(): UsageTree {
   let agySnapshot: AgyUsageSnapshot | null = null;
 
   const listeners = new Set<() => void>();
+  const disposables: { dispose(): void }[] = [];
 
   function update(
     claude: ClaudeUsageState,
@@ -358,16 +360,28 @@ export function createUsageTree(): UsageTree {
 
   function onDidChange(listener: () => void): { dispose(): void } {
     listeners.add(listener);
-    return {
+    let disposed = false;
+    const disposable = {
       dispose(): void {
+        if (disposed) return;
+        disposed = true;
         listeners.delete(listener);
       },
     };
+    disposables.push(disposable);
+    return disposable;
+  }
+
+  function dispose(): void {
+    for (const disposable of disposables.splice(0)) {
+      disposable.dispose();
+    }
   }
 
   return {
     update,
     getChildren,
     onDidChange,
+    dispose,
   };
 }
