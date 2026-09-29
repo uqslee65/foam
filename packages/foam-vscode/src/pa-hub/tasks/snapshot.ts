@@ -167,17 +167,17 @@ export function createSnapshot(
   return { filename, revision, tasks: resolvedTasks };
 }
 
-export function snapshotFromFiles(
+export async function snapshotFromFiles(
   filenames: readonly string[],
-  getContent: (filename: string) => string | null,
+  getContent: (filename: string) => Promise<string | null>,
   getRevision: (filename: string) => string
-): SnapshotResult {
+): Promise<SnapshotResult> {
   const filename = selectNewestDailyFile(filenames);
   if (filename === null) {
     return { ok: false, reason: 'no_valid_file' };
   }
 
-  const content = getContent(filename);
+  const content = await getContent(filename);
   if (content === null) {
     return { ok: false, reason: 'no_valid_file' };
   }
