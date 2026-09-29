@@ -392,7 +392,7 @@ describe('withPrivacy', () => {
     expect(innerMatcher.refreshCount()).toBe(1);
   });
 
-  it('test_privacy_index_passes_writes_through_for_excluded_uris', async () => {
+  it('test_privacy_index_denies_excluded_writes_and_passes_allowed_writes_through', async () => {
     const store = createDataStore([], new Map());
     const wrapped = withPrivacy(
       createPolicy(input => input === excludedUri.toFsPath()),
@@ -400,37 +400,56 @@ describe('withPrivacy', () => {
       store.dataStore
     );
 
-    await wrapped.dataStore.write(excludedUri, 'new content');
+    await expect(
+      wrapped.dataStore.write(excludedUri, 'new content')
+    ).rejects.toThrow('Privacy policy denied write');
+    expect(store.writes).toEqual([]);
+
+    await wrapped.dataStore.write(allowedUri, 'allowed content');
 
     expect(store.writes).toEqual([
-      { uri: excludedUri, content: 'new content' },
+      { uri: allowedUri, content: 'allowed content' },
     ]);
   });
 
-  it('test_privacy_index_passes_delete_through', async () => {
+  it('test_privacy_index_denies_excluded_deletes_and_passes_allowed_deletes_through', async () => {
     const store = createDataStore([], new Map());
     const wrapped = withPrivacy(
-      createPolicy(() => true),
+      createPolicy(input => input === excludedUri.toFsPath()),
       createMatcher([]).matcher,
       store.dataStore
     );
 
-    await wrapped.dataStore.delete(excludedUri);
+    await expect(wrapped.dataStore.delete(excludedUri)).rejects.toThrow(
+      'Privacy policy denied delete'
+    );
+    expect(store.deletes).toEqual([]);
 
-    expect(pathList(store.deletes)).toEqual([excludedUri.path]);
+    await wrapped.dataStore.delete(allowedUri);
+
+    expect(pathList(store.deletes)).toEqual([allowedUri.path]);
   });
 
-  it('test_privacy_index_passes_move_through', async () => {
+  it('test_privacy_index_denies_excluded_moves_and_passes_allowed_moves_through', async () => {
     const store = createDataStore([], new Map());
     const wrapped = withPrivacy(
-      createPolicy(() => true),
+      createPolicy(input => input === excludedUri.toFsPath()),
       createMatcher([]).matcher,
       store.dataStore
     );
 
-    await wrapped.dataStore.move(excludedUri, allowedUri);
+    await expect(
+      wrapped.dataStore.move(excludedUri, allowedUri)
+    ).rejects.toThrow('Privacy policy denied move');
+    await expect(
+      wrapped.dataStore.move(allowedUri, excludedUri)
+    ).rejects.toThrow('Privacy policy denied move');
+    expect(store.moves).toEqual([]);
 
-    expect(store.moves).toEqual([{ from: excludedUri, to: allowedUri }]);
+    const movedUri = URI.file(`${ROOT}/notes/moved.md`);
+    await wrapped.dataStore.move(allowedUri, movedUri);
+
+    expect(store.moves).toEqual([{ from: allowedUri, to: movedUri }]);
   });
 
   it('test_privacy_index_passes_exists_through', async () => {

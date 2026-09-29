@@ -93,6 +93,7 @@ describe('live Claude usage watcher', () => {
     });
     activeWatchers.push(watcher);
 
+    await waitFor(() => onState.mock.calls.length === 1);
     expect(onState).toHaveBeenCalledTimes(1);
     writeRateLimits('claude-after');
 
@@ -116,6 +117,7 @@ describe('live Claude usage watcher', () => {
     });
     activeWatchers.push(watcher);
 
+    await waitFor(() => onState.mock.calls.length === 1);
     watcher.dispose();
     const callCount = onState.mock.calls.length;
     writeRateLimits('claude-after');

@@ -265,25 +265,25 @@ describe('Claude usage sidecar', () => {
     });
   });
 
-  it('test_claude_usage_read_missing_dir', () => {
-    expect(readClaudeUsage(path.join(fixtureRoot, 'nope'))).toEqual({
+  it('test_claude_usage_read_missing_dir', async () => {
+    await expect(readClaudeUsage(path.join(fixtureRoot, 'nope'))).resolves.toEqual({
       status: 'missing',
       reason: 'no-dir',
     });
   });
 
-  it('test_claude_usage_read_missing_file', () => {
+  it('test_claude_usage_read_missing_file', async () => {
     const dir = path.join(fixtureRoot, 'empty');
     fs.mkdirSync(dir);
-    expect(readClaudeUsage(dir)).toEqual({
+    await expect(readClaudeUsage(dir)).resolves.toEqual({
       status: 'missing',
       reason: 'no-file',
     });
   });
 
-  it('test_claude_usage_read_invalid_json', () => {
+  it('test_claude_usage_read_invalid_json', async () => {
     fs.writeFileSync(path.join(fixtureRoot, RATE_LIMITS_FILE), '{nope');
-    const state = readClaudeUsage(fixtureRoot);
+    const state = await readClaudeUsage(fixtureRoot);
     expect(state).toMatchObject({ status: 'invalid', reason: 'parse' });
     if (state.status !== 'invalid') {
       throw new Error('expected invalid Claude usage state');
@@ -291,20 +291,20 @@ describe('Claude usage sidecar', () => {
     expect(state.detail).toBeTruthy();
   });
 
-  it('test_claude_usage_read_schema_error', () => {
+  it('test_claude_usage_read_schema_error', async () => {
     fs.writeFileSync(path.join(fixtureRoot, RATE_LIMITS_FILE), '[]');
-    expect(readClaudeUsage(fixtureRoot)).toMatchObject({
+    await expect(readClaudeUsage(fixtureRoot)).resolves.toMatchObject({
       status: 'invalid',
       reason: 'schema',
     });
   });
 
-  it('test_claude_usage_read_fresh_vs_stale', () => {
+  it('test_claude_usage_read_fresh_vs_stale', async () => {
     const now = 1_700_000_000_000;
     const file = path.join(fixtureRoot, RATE_LIMITS_FILE);
 
     fs.writeFileSync(file, JSON.stringify(validPayload(now, {})));
-    const fresh = readClaudeUsage(fixtureRoot, {
+    const fresh = await readClaudeUsage(fixtureRoot, {
       now,
       staleAfterMs: 10_000,
     });
@@ -318,7 +318,7 @@ describe('Claude usage sidecar', () => {
       file,
       JSON.stringify(validPayload(now - 19_000, {}))
     );
-    const stale = readClaudeUsage(fixtureRoot, {
+    const stale = await readClaudeUsage(fixtureRoot, {
       now,
       staleAfterMs: 10_000,
     });
@@ -332,7 +332,7 @@ describe('Claude usage sidecar', () => {
       file,
       JSON.stringify(validPayload(now + 61_000, {}))
     );
-    const clockSkew = readClaudeUsage(fixtureRoot, {
+    const clockSkew = await readClaudeUsage(fixtureRoot, {
       now,
       staleAfterMs: 10_000,
     });
@@ -343,7 +343,7 @@ describe('Claude usage sidecar', () => {
     expect(clockSkew.observation.ageMs).toBe(0);
   });
 
-  it('test_claude_usage_read_only_touches_rate_limits_file', () => {
+  it('test_claude_usage_read_only_touches_rate_limits_file', async () => {
     for (const name of [
       'credentials.json',
       'stats-cache.json',
@@ -357,15 +357,17 @@ describe('Claude usage sidecar', () => {
     );
     const recorded: string[] = [];
     const recordingFs = {
-      existsSync: (target: fs.PathLike) => fs.existsSync(target),
-      readFileSync: (target: fs.PathLike, encoding: BufferEncoding) => {
-        recorded.push(path.basename(String(target)));
-        return fs.readFileSync(target, encoding);
+      promises: {
+        access: (target: fs.PathLike) => fs.promises.access(target),
+        readFile: (target: fs.PathLike, encoding: BufferEncoding) => {
+          recorded.push(path.basename(String(target)));
+          return fs.promises.readFile(target, encoding);
+        },
       },
       watch: fs.watch.bind(fs),
     } as unknown as UsageFs;
 
-    const state = readClaudeUsage(fixtureRoot, { fs: recordingFs });
+    const state = await readClaudeUsage(fixtureRoot, { fs: recordingFs });
     expect(state.status).toBe('fresh');
     expect(recorded).toEqual([RATE_LIMITS_FILE]);
     expect(JSON.stringify(state)).not.toContain(SENTINEL);
@@ -380,6 +382,7 @@ describe('Claude usage sidecar', () => {
       debounceMs: 20,
       staleAfterMs: 60_000,
     });
+    await waitFor(() => states.length === 1);
     expect(states).toHaveLength(1);
     expect(states[0]?.status).toBe('fresh');
 
@@ -403,6 +406,7 @@ describe('Claude usage sidecar', () => {
     const stateDir = path.join(fixtureRoot, 'missing');
     const states: ClaudeUsageState[] = [];
     startWatcher(stateDir, states, { pollMs: 20 });
+    await waitFor(() => states.length === 1);
     expect(states[0]).toEqual({ status: 'missing', reason: 'no-dir' });
 
     fs.mkdirSync(stateDir);
@@ -439,6 +443,7 @@ describe('Claude usage sidecar', () => {
       pollMs: 10_000,
       staleAfterMs: 200,
     });
+    await waitFor(() => states.length === 1);
     expect(states[0]?.status).toBe('fresh');
     await waitFor(
       () =>
@@ -456,8 +461,11 @@ describe('Claude usage sidecar', () => {
     };
     fakeWatcher.close = () => {};
     const injectedFs = {
-      existsSync: (target: fs.PathLike) => fs.existsSync(target),
-      readFileSync: fs.readFileSync,
+      promises: {
+        access: (target: fs.PathLike) => fs.promises.access(target),
+        readFile: (target: fs.PathLike, encoding: BufferEncoding) =>
+          fs.promises.readFile(target, encoding),
+      },
       watch: (() => fakeWatcher) as unknown as UsageFs['watch'],
     } as unknown as UsageFs;
     const states: ClaudeUsageState[] = [];
@@ -467,6 +475,7 @@ describe('Claude usage sidecar', () => {
       debounceMs: 20,
     });
 
+    await waitFor(() => states.length === 1);
     expect(() => fakeWatcher.emit('error', new Error('watcher'))).not.toThrow();
     writeAtomic(
       fixtureRoot,

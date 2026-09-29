@@ -230,7 +230,7 @@ export function createPrivacyPolicy(config: PrivacyConfig): PrivacyPolicy {
     }
 
     const normalisedInput = path.normalize(input);
-    const canonicalPath = resolveCanonicalPath(normalisedInput);
+    const canonicalPath = resolveCanonicalPath(input);
     if (canonicalPath === null) {
       return makeDecision(input, 'outside_roots');
     }
