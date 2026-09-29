@@ -81,7 +81,7 @@ describe('test_identity_manifest', () => {
 
   it('test_identity_commands_prefixed', () => {
     const commands = contributes.commands as Array<Record<string, string>>;
-    expect(commands).toHaveLength(56);
+    expect(commands).toHaveLength(60);
     expect(
       commands.every(command => command.command.startsWith('pa-hub.'))
     ).toBe(true);

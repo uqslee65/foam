@@ -15,6 +15,7 @@ export const makeStyle = (overrides: Partial<ResolvedStyle> = {}): ResolvedStyle
     placeholder: '#333333',
     tag: '#ffff00',
   },
+  groups: [],
   colorMode: 'type',
   ...overrides,
 });

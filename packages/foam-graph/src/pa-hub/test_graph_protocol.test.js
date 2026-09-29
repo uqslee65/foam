@@ -60,7 +60,9 @@ describe('test_graph_protocol_validation', () => {
         const styleInput = { type: 'didUpdateStyle', payload: { colorMode: 'type' } };
         const style = parseExtensionMessage(styleInput);
         expect(style.ok).toBe(true);
-        expect(style.value).not.toBe(styleInput);
+        if (style.ok) {
+            expect(style.value).not.toBe(styleInput);
+        }
         const graphInput = {
             type: 'didUpdateGraphData',
             payload: {
@@ -92,7 +94,9 @@ describe('test_graph_protocol_validation', () => {
         };
         const graph = parseExtensionMessage(graphInput);
         expect(graph.ok).toBe(true);
-        expect(graph.value).not.toBe(graphInput);
+        if (graph.ok) {
+            expect(graph.value).not.toBe(graphInput);
+        }
         const selected = parseExtensionMessage({ type: 'didSelectNote', payload: 'vault:a.md' });
         expect(selected.ok).toBe(true);
     });
@@ -153,7 +157,7 @@ describe('test_graph_protocol_validation', () => {
             },
         });
         expect(result.ok).toBe(true);
-        if (result.ok) {
+        if (result.ok && result.value.type === 'error') {
             expect('error' in result.value.payload).toBe(false);
         }
         expect(parseWebviewMessage({
@@ -340,7 +344,7 @@ describe('test_graph_protocol_validation', () => {
         };
         const result = parseExtensionMessage(input);
         expect(result.ok).toBe(true);
-        if (result.ok) {
+        if (result.ok && result.value.type === 'didUpdateStyle') {
             expect(result.value).toEqual(input);
             expect(result.value).not.toBe(input);
             expect(result.value.payload).not.toBe(input.payload);

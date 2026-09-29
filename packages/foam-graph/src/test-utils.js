@@ -12,6 +12,7 @@ export const makeStyle = (overrides = {}) => ({
         placeholder: '#333333',
         tag: '#ffff00',
     },
+    groups: [],
     colorMode: 'type',
     ...overrides,
 });

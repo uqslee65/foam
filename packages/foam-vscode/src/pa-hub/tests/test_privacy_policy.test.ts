@@ -300,6 +300,7 @@ describe('sidebar manifest contract', () => {
       'pa-hub.sources',
       'pa-hub.usage',
       'pa-hub.calendar',
+      'pa-hub.history',
     ]);
   });
 
