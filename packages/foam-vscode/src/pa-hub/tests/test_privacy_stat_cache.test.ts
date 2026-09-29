@@ -65,4 +65,35 @@ describe('privacy policy mandatory reference stat cache', () => {
     ).length;
     expect(mandatoryPathStatsAfterDecisions).toBe(1);
   });
+
+  it('test_privacy_stat_cache_candidate_path_statted_once_across_repeated_decide', () => {
+    fixtureRoot = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'pa-hub-privacy-stat-cache-candidate-')
+    );
+    const notePath = path.join(fixtureRoot, 'notes', 'note.md');
+    fs.mkdirSync(path.dirname(notePath), { recursive: true });
+    fs.writeFileSync(notePath, 'note');
+
+    const canonicalNotePath = path.join(
+      fs.realpathSync.native(fixtureRoot),
+      'notes',
+      'note.md'
+    );
+
+    const policy = createPrivacyPolicy({
+      roots: [fixtureRoot],
+      excludeGlobs: [],
+    });
+
+    statSyncMock.fn.mockClear();
+
+    policy.decide(notePath);
+    policy.decide(notePath);
+    policy.decide(notePath);
+
+    const candidateStatCalls = statSyncMock.fn.mock.calls.filter(
+      ([filePath]) => String(filePath) === canonicalNotePath
+    ).length;
+    expect(candidateStatCalls).toBe(1);
+  });
 });

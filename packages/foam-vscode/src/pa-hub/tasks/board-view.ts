@@ -104,6 +104,13 @@ export function activateBoardView(
     });
 
     let currentSnapshot: TaskSnapshot | null = null;
+    let mutationQueue: Promise<void> = Promise.resolve();
+
+    function enqueueMutation(mutation: () => Promise<void>): Promise<void> {
+      const next = mutationQueue.then(mutation);
+      mutationQueue = next.catch(() => {});
+      return next;
+    }
 
     async function refresh(): Promise<void> {
       currentSnapshot = await loadSnapshot(tasksDir);
@@ -119,24 +126,32 @@ export function activateBoardView(
       new vscode.RelativePattern(tasksDir, '*.md')
     );
 
-    watcher.onDidChange(() => refresh());
-    watcher.onDidCreate(() => refresh());
-    watcher.onDidDelete(() => refresh());
+    watcher.onDidChange(() => {
+      void refresh().catch(error => console.error(error));
+    });
+    watcher.onDidCreate(() => {
+      void refresh().catch(error => console.error(error));
+    });
+    watcher.onDidDelete(() => {
+      void refresh().catch(error => console.error(error));
+    });
 
-    panel.webview.onDidReceiveMessage(async msg => {
+    panel.webview.onDidReceiveMessage(msg => {
       if (msg.type === 'toggle') {
-        const snapshot = currentSnapshot ?? (await loadSnapshot(tasksDir));
-        if (snapshot) {
-          const result = await writer.toggle(
-            tasksDir,
-            snapshot,
-            msg.identity,
-            msg.checked
-          );
-          if (result.ok) {
-            currentSnapshot = await loadSnapshot(tasksDir);
+        void enqueueMutation(async () => {
+          const snapshot = currentSnapshot ?? (await loadSnapshot(tasksDir));
+          if (snapshot) {
+            const result = await writer.toggle(
+              tasksDir,
+              snapshot,
+              msg.identity,
+              msg.checked
+            );
+            if (result.ok) {
+              currentSnapshot = await loadSnapshot(tasksDir);
+            }
           }
-        }
+        }).catch(error => console.error(error));
       }
     });
 

@@ -115,25 +115,34 @@ export function activateTasksTree(
     manageCheckboxStateManually: true,
   });
   let currentSnapshot: TaskSnapshot | null = null;
+  let mutationQueue: Promise<void> = Promise.resolve();
 
-  treeView.onDidChangeCheckboxState(async event => {
-    for (const [item, state] of event.items) {
-      if (item.kind !== 'item') continue;
-      const snapshot = currentSnapshot;
-      if (!snapshot) continue;
+  function enqueueMutation(mutation: () => Promise<void>): Promise<void> {
+    const next = mutationQueue.then(mutation);
+    mutationQueue = next.catch(() => {});
+    return next;
+  }
 
-      const checked = state === vscode.TreeItemCheckboxState.Checked;
-      const result = await writer.toggle(
-        tasksDir,
-        snapshot,
-        item.identity,
-        checked
-      );
-      if (result.ok) {
-        currentSnapshot = await loadSnapshot(tasksDir);
-        if (currentSnapshot) tree.refresh(currentSnapshot);
+  treeView.onDidChangeCheckboxState(event => {
+    void enqueueMutation(async () => {
+      for (const [item, state] of event.items) {
+        if (item.kind !== 'item') continue;
+        const snapshot = currentSnapshot;
+        if (!snapshot) continue;
+
+        const checked = state === vscode.TreeItemCheckboxState.Checked;
+        const result = await writer.toggle(
+          tasksDir,
+          snapshot,
+          item.identity,
+          checked
+        );
+        if (result.ok) {
+          currentSnapshot = await loadSnapshot(tasksDir);
+          if (currentSnapshot) tree.refresh(currentSnapshot);
+        }
       }
-    }
+    }).catch(error => console.error(error));
   });
 
   async function mutateAndRefresh(
@@ -150,11 +159,15 @@ export function activateTasksTree(
   context.subscriptions.push(
     vscode.commands.registerCommand('pa-hub.task-move-up', (node: TaskItemNode) => {
       if (!node?.identity) return;
-      return mutateAndRefresh(snap => writer.move(tasksDir, snap, node.identity, 'up'));
+      return enqueueMutation(() =>
+        mutateAndRefresh(snap => writer.move(tasksDir, snap, node.identity, 'up'))
+      );
     }),
     vscode.commands.registerCommand('pa-hub.task-move-down', (node: TaskItemNode) => {
       if (!node?.identity) return;
-      return mutateAndRefresh(snap => writer.move(tasksDir, snap, node.identity, 'down'));
+      return enqueueMutation(() =>
+        mutateAndRefresh(snap => writer.move(tasksDir, snap, node.identity, 'down'))
+      );
     }),
     vscode.commands.registerCommand('pa-hub.task-set-quadrant', async (node: TaskItemNode) => {
       if (!node?.identity) return;
@@ -163,7 +176,11 @@ export function activateTasksTree(
         { placeHolder: 'Assign quadrant' }
       );
       if (!pick) return;
-      return mutateAndRefresh(snap => writer.setQuadrant(tasksDir, snap, node.identity, pick));
+      return enqueueMutation(() =>
+        mutateAndRefresh(snap =>
+          writer.setQuadrant(tasksDir, snap, node.identity, pick)
+        )
+      );
     }),
     vscode.commands.registerCommand('pa-hub.task-dispatch', (node: TaskItemNode) => {
       if (!node?.identity) return;
@@ -187,14 +204,20 @@ export function activateTasksTree(
     if (currentSnapshot) tree.refresh(currentSnapshot);
   }
 
-  refreshFromDisk();
+  void refreshFromDisk().catch(error => console.error(error));
 
   const watcher = vscode.workspace.createFileSystemWatcher(
     new vscode.RelativePattern(vscode.Uri.file(tasksDir), '*.md')
   );
-  watcher.onDidChange(() => refreshFromDisk());
-  watcher.onDidCreate(() => refreshFromDisk());
-  watcher.onDidDelete(() => refreshFromDisk());
+  watcher.onDidChange(() => {
+    void refreshFromDisk().catch(error => console.error(error));
+  });
+  watcher.onDidCreate(() => {
+    void refreshFromDisk().catch(error => console.error(error));
+  });
+  watcher.onDidDelete(() => {
+    void refreshFromDisk().catch(error => console.error(error));
+  });
 
   context.subscriptions.push(treeView, watcher, provider._onDidChange);
 }

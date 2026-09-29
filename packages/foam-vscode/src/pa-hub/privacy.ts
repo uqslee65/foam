@@ -202,6 +202,7 @@ export function createPrivacyPolicy(config: PrivacyConfig): PrivacyPolicy {
     )
   );
   const cachedMandatoryReferences = mandatoryReferencePaths.map(fileIdentity);
+  const cachedCandidateIdentities = new Map<string, FileIdentity | null>();
   const version = `privacy-v1:${JSON.stringify({
     roots: roots.map(entry => entry.canonical),
     exclusions: [...MANDATORY_EXCLUSIONS, ...configuredGlobs],
@@ -262,7 +263,13 @@ export function createPrivacyPolicy(config: PrivacyConfig): PrivacyPolicy {
       );
     }
 
-    const candidateIdentity = fileIdentity(canonicalPath);
+    let candidateIdentity: FileIdentity | null;
+    if (cachedCandidateIdentities.has(canonicalPath)) {
+      candidateIdentity = cachedCandidateIdentities.get(canonicalPath) ?? null;
+    } else {
+      candidateIdentity = fileIdentity(canonicalPath);
+      cachedCandidateIdentities.set(canonicalPath, candidateIdentity);
+    }
     if (
       candidateIdentity !== null &&
       cachedMandatoryReferences.some(
