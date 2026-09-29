@@ -95,6 +95,10 @@ export class FocusQueue {
   }
 
   markNotReady(): void {
+    if (this.queue.length === 0) {
+      return;
+    }
+
     this.ready = false;
     if (this.queue.length > 1) {
       this.queue = [this.queue[this.queue.length - 1]];

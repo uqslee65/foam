@@ -69,11 +69,16 @@ function classifyCycle(entry: Record<string, unknown>): string {
   return 'done';
 }
 
-export function readPdcaCycles(logsDir: string, limit = 100): PdcaCycle[] {
+export async function readPdcaCycles(
+  logsDir: string,
+  limit = 100
+): Promise<PdcaCycle[]> {
   const cycles: PdcaCycle[] = [];
   let files: string[];
   try {
-    files = fs.readdirSync(logsDir).filter(f => f.endsWith('.yaml') && f !== 'queue-order.yaml');
+    files = (await fs.promises.readdir(logsDir)).filter(
+      f => f.endsWith('.yaml') && f !== 'queue-order.yaml'
+    );
   } catch {
     return [];
   }
@@ -84,7 +89,7 @@ export function readPdcaCycles(logsDir: string, limit = 100): PdcaCycle[] {
   for (const file of toRead) {
     const filePath = path.join(logsDir, file);
     try {
-      const raw = fs.readFileSync(filePath, 'utf-8');
+      const raw = await fs.promises.readFile(filePath, 'utf-8');
       const doc = parse(raw) as Record<string, unknown> | null;
       if (!doc) {
         continue;
