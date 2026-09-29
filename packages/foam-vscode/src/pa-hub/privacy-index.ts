@@ -30,9 +30,24 @@ export function withPrivacy(
       ),
     read: async uri =>
       isAllowedUri(policy, uri) ? dataStore.read(uri) : Promise.resolve(null),
-    write: (uri, content) => dataStore.write(uri, content),
-    delete: uri => dataStore.delete(uri),
-    move: (from, to) => dataStore.move(from, to),
+    write: async (uri, content) => {
+      if (!isAllowedUri(policy, uri)) {
+        throw new Error('Privacy policy denied write');
+      }
+      await dataStore.write(uri, content);
+    },
+    delete: async uri => {
+      if (!isAllowedUri(policy, uri)) {
+        throw new Error('Privacy policy denied delete');
+      }
+      await dataStore.delete(uri);
+    },
+    move: async (from, to) => {
+      if (!isAllowedUri(policy, from) || !isAllowedUri(policy, to)) {
+        throw new Error('Privacy policy denied move');
+      }
+      await dataStore.move(from, to);
+    },
     exists: uri => dataStore.exists(uri),
   };
 
