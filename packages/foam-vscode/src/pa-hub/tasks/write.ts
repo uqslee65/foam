@@ -1,3 +1,5 @@
+import { unlink as unlinkFile } from 'node:fs/promises';
+import { Logger } from '@foam/core';
 import { selectNewestDailyFile } from './snapshot';
 import type { TaskRecord, TaskSnapshot } from './snapshot';
 
@@ -13,7 +15,9 @@ export function resolveToggleTarget(
   snapshot: TaskSnapshot,
   identity: string
 ): ToggleResult {
-  const task = snapshot.tasks.find(candidate => candidate.identity === identity);
+  const task = snapshot.tasks.find(
+    candidate => candidate.identity === identity
+  );
   if (task === undefined) {
     return { ok: false, reason: 'unknown_identity' };
   }
@@ -93,10 +97,17 @@ export function applyMove(
     return { ok: false, reason: 'stale_line' };
   }
   const target = direction === 'up' ? task.lineIndex - 1 : task.lineIndex + 1;
-  if (target < 0 || target >= lines.length || !lines[target].startsWith('- [')) {
+  if (
+    target < 0 ||
+    target >= lines.length ||
+    !lines[target].startsWith('- [')
+  ) {
     return { ok: false, reason: 'stale_line' };
   }
-  [lines[task.lineIndex], lines[target]] = [lines[target], lines[task.lineIndex]];
+  [lines[task.lineIndex], lines[target]] = [
+    lines[target],
+    lines[task.lineIndex],
+  ];
   return { ok: true, content: lines.join('\n') };
 }
 
@@ -115,7 +126,10 @@ export function applyQuadrantChange(
     const comment = m[1].match(/quadrant:\S+/)
       ? m[1].replace(/quadrant:\S+/, `quadrant:${quadrant}`)
       : `${m[1]} quadrant:${quadrant}`;
-    lines[task.lineIndex] = line.replace(/<!--\s*.*?\s*-->/, `<!-- ${comment} -->`);
+    lines[task.lineIndex] = line.replace(
+      /<!--\s*.*?\s*-->/,
+      `<!-- ${comment} -->`
+    );
   } else {
     lines[task.lineIndex] = `${line.trimEnd()} <!-- quadrant:${quadrant} -->`;
   }
@@ -125,43 +139,64 @@ export function applyQuadrantChange(
 export function createTaskWriter(fs: TaskWriteFs): TaskWriter {
   let chain: Promise<WriteResult | void> = Promise.resolve();
 
+  async function cleanupTmpFile(tmpPath: string): Promise<void> {
+    const injectableFs = fs as TaskWriteFs & {
+      unlink?: (path: string) => Promise<void>;
+    };
+    try {
+      if (injectableFs.unlink) {
+        await injectableFs.unlink(tmpPath);
+      } else {
+        await unlinkFile(tmpPath);
+      }
+    } catch {
+      // Cleanup is best effort and must not mask the write failure.
+    }
+  }
+
   async function doMutate(
     dir: string,
     snapshot: TaskSnapshot,
     identity: string,
     mutate: (content: string, task: TaskRecord) => MutationResult
   ): Promise<WriteResult> {
+    const target = resolveToggleTarget(snapshot, identity);
+    if (target.ok === false) {
+      return { ok: false, reason: target.reason };
+    }
+    const filenames = await fs.listDir(dir);
+    const filename = selectNewestDailyFile(filenames);
+    if (filename === null) return { ok: false, reason: 'no_valid_file' };
+    if (filename !== snapshot.filename)
+      return { ok: false, reason: 'latest_changed' };
+
+    const targetPath = dir + '/' + filename;
+    const firstStat = await fs.stat(targetPath);
+    if (firstStat === null) return { ok: false, reason: 'io_error' };
+    if (firstStat.revision !== snapshot.revision)
+      return { ok: false, reason: 'stale_revision' };
+
+    const content = await fs.readFile(targetPath);
+    if (content === null) return { ok: false, reason: 'io_error' };
+
+    const mutation = mutate(content, target.task);
+    if (!mutation.ok) return { ok: false, reason: 'stale_line' };
+
+    const tmpPath = dir + '/.' + filename + '.tmp';
+    let renamed = false;
     try {
-      const target = resolveToggleTarget(snapshot, identity);
-      if (target.ok === false) {
-        return { ok: false, reason: target.reason };
-      }
-      const filenames = await fs.listDir(dir);
-      const filename = selectNewestDailyFile(filenames);
-      if (filename === null) return { ok: false, reason: 'no_valid_file' };
-      if (filename !== snapshot.filename) return { ok: false, reason: 'latest_changed' };
-
-      const targetPath = dir + '/' + filename;
-      const firstStat = await fs.stat(targetPath);
-      if (firstStat === null) return { ok: false, reason: 'io_error' };
-      if (firstStat.revision !== snapshot.revision) return { ok: false, reason: 'stale_revision' };
-
-      const content = await fs.readFile(targetPath);
-      if (content === null) return { ok: false, reason: 'io_error' };
-
-      const mutation = mutate(content, target.task);
-      if (!mutation.ok) return { ok: false, reason: 'stale_line' };
-
-      const tmpPath = dir + '/.' + filename + '.tmp';
       await fs.writeFile(tmpPath, mutation.content, firstStat.mode);
       const secondStat = await fs.stat(targetPath);
       if (secondStat === null || secondStat.revision !== firstStat.revision) {
         return { ok: false, reason: 'stale_revision' };
       }
       await fs.rename(tmpPath, targetPath);
+      renamed = true;
       return { ok: true, revision: secondStat.revision };
-    } catch {
-      return { ok: false, reason: 'io_error' };
+    } finally {
+      if (!renamed) {
+        await cleanupTmpFile(tmpPath);
+      }
     }
   }
 
@@ -171,64 +206,66 @@ export function createTaskWriter(fs: TaskWriteFs): TaskWriter {
     identity: string,
     checked: boolean
   ): Promise<WriteResult> {
+    const target = resolveToggleTarget(snapshot, identity);
+    if (target.ok === false) {
+      return { ok: false, reason: target.reason };
+    }
+
+    const filenames = await fs.listDir(dir);
+    const filename = selectNewestDailyFile(filenames);
+    if (filename === null) {
+      return { ok: false, reason: 'no_valid_file' };
+    }
+
+    if (filename !== snapshot.filename) {
+      return { ok: false, reason: 'latest_changed' };
+    }
+
+    const targetPath = dir + '/' + filename;
+    const firstStat = await fs.stat(targetPath);
+    if (firstStat === null) {
+      return { ok: false, reason: 'io_error' };
+    }
+
+    if (firstStat.revision !== snapshot.revision) {
+      return { ok: false, reason: 'stale_revision' };
+    }
+
+    const content = await fs.readFile(targetPath);
+    if (content === null) {
+      return { ok: false, reason: 'io_error' };
+    }
+
+    const mutation = applyCheckboxToggle(content, target.task, checked);
+    if (!mutation.ok) {
+      return { ok: false, reason: 'stale_line' };
+    }
+
+    const tmpPath = dir + '/.' + filename + '.tmp';
+    let renamed = false;
     try {
-      const target = resolveToggleTarget(snapshot, identity);
-      if (target.ok === false) {
-        return { ok: false, reason: target.reason };
-      }
-
-      const filenames = await fs.listDir(dir);
-      const filename = selectNewestDailyFile(filenames);
-      if (filename === null) {
-        return { ok: false, reason: 'no_valid_file' };
-      }
-
-      if (filename !== snapshot.filename) {
-        return { ok: false, reason: 'latest_changed' };
-      }
-
-      const targetPath = dir + '/' + filename;
-      const firstStat = await fs.stat(targetPath);
-      if (firstStat === null) {
-        return { ok: false, reason: 'io_error' };
-      }
-
-      if (firstStat.revision !== snapshot.revision) {
-        return { ok: false, reason: 'stale_revision' };
-      }
-
-      const content = await fs.readFile(targetPath);
-      if (content === null) {
-        return { ok: false, reason: 'io_error' };
-      }
-
-      const mutation = applyCheckboxToggle(content, target.task, checked);
-      if (!mutation.ok) {
-        return { ok: false, reason: 'stale_line' };
-      }
-
-      const tmpPath = dir + '/.' + filename + '.tmp';
       await fs.writeFile(tmpPath, mutation.content, firstStat.mode);
 
       const secondStat = await fs.stat(targetPath);
-      if (
-        secondStat === null ||
-        secondStat.revision !== firstStat.revision
-      ) {
+      if (secondStat === null || secondStat.revision !== firstStat.revision) {
         return { ok: false, reason: 'stale_revision' };
       }
 
       await fs.rename(tmpPath, targetPath);
+      renamed = true;
       return { ok: true, revision: secondStat.revision };
-    } catch {
-      return { ok: false, reason: 'io_error' };
+    } finally {
+      if (!renamed) {
+        await cleanupTmpFile(tmpPath);
+      }
     }
   }
 
   function enqueue(fn: () => Promise<WriteResult>): Promise<WriteResult> {
-    const next = chain
-      .then(fn)
-      .catch(() => ({ ok: false, reason: 'io_error' } as const));
+    const next = chain.then(fn).catch(error => {
+      Logger.error('Task write failed', error);
+      throw error;
+    });
     chain = next;
     return next;
   }
@@ -244,7 +281,9 @@ export function createTaskWriter(fs: TaskWriteFs): TaskWriter {
     },
     setQuadrant(dir, snapshot, identity, quadrant) {
       return enqueue(() =>
-        doMutate(dir, snapshot, identity, (c, t) => applyQuadrantChange(c, t, quadrant))
+        doMutate(dir, snapshot, identity, (c, t) =>
+          applyQuadrantChange(c, t, quadrant)
+        )
       );
     },
   };

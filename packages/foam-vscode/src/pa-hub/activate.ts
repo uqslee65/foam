@@ -184,8 +184,8 @@ class HistoryTreeDataProvider
     this.tree.onDidChange(() => this._onDidChange.fire());
   }
 
-  refresh(logsDir: string, limit = 100): void {
-    const cycles = readPdcaCycles(logsDir, limit);
+  async refresh(logsDir: string, limit = 100): Promise<void> {
+    const cycles = await readPdcaCycles(logsDir, limit);
     this.tree.refresh(cycles);
   }
 
@@ -488,8 +488,8 @@ export function activatePaHub(
     treeDataProvider: historyProvider,
   });
 
-  const refreshHistory = () => {
-    historyProvider.refresh(pdcaLogsDir);
+  const refreshHistory = async () => {
+    await historyProvider.refresh(pdcaLogsDir);
   };
 
   const refreshHistoryCommand = vscode.commands.registerCommand(

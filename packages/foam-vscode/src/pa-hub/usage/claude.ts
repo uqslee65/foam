@@ -7,10 +7,11 @@ export const MAX_MODEL_STRING_LENGTH = 128;
 export const CLAUDE_USAGE_POLL_MS = 5_000;
 export const CLAUDE_USAGE_DEBOUNCE_MS = 50;
 
-export type UsageFs = Pick<
-  typeof import('node:fs'),
-  'readFileSync' | 'existsSync' | 'watch'
->;
+type UsageFsPromises = Pick<typeof fs.promises, 'access' | 'readFile'>;
+
+export type UsageFs = Pick<typeof import('node:fs'), 'watch'> & {
+  promises?: UsageFsPromises;
+};
 
 export function resolveClaudeStateDir(
   env: { PA_HUB_STATE_DIR?: string; HOME?: string },
@@ -153,23 +154,26 @@ function errorDetail(error: unknown): string {
   return String(error);
 }
 
-export function readClaudeUsage(
+export async function readClaudeUsage(
   stateDir: string,
   opts: {
     now?: number;
     staleAfterMs?: number;
     fs?: UsageFs;
   } = {}
-): ClaudeUsageState {
+): Promise<ClaudeUsageState> {
   const file = path.join(stateDir, RATE_LIMITS_FILE);
   const fileSystem = opts.fs ?? fs;
-  if (!fileSystem.existsSync(stateDir)) {
+  const filePromises = fileSystem.promises ?? fs.promises;
+  try {
+    await filePromises.access(stateDir);
+  } catch (error) {
     return { status: 'missing', reason: 'no-dir' };
   }
 
   let raw: string;
   try {
-    raw = fileSystem.readFileSync(file, 'utf8');
+    raw = await filePromises.readFile(file, 'utf8');
   } catch (error) {
     if (isPlainObject(error) && error.code === 'ENOENT') {
       return { status: 'missing', reason: 'no-file' };
@@ -255,14 +259,9 @@ export function watchClaudeUsage(
   let debounceTimer: Timer | null = null;
   let staleTimer: Timer | null = null;
   let pollTimer: ReturnType<typeof setInterval> | null = null;
+  let watcherAttachInFlight = false;
 
-  const initialState = readClaudeUsage(stateDir, {
-    now: now(),
-    staleAfterMs,
-    fs: fileSystem,
-  });
-  let lastKey = stateKey(initialState);
-  onState(initialState);
+  let lastKey: string | null = null;
 
   function clearDebounceTimer(): void {
     if (debounceTimer !== null) {
@@ -289,28 +288,29 @@ export function watchClaudeUsage(
     staleTimer = setTimeout(() => {
       staleTimer = null;
       if (!disposed) {
-        refresh();
+        void refresh();
       }
     }, delay);
     unrefTimer(staleTimer);
   }
 
-  function refresh(): void {
+  async function refresh(): Promise<void> {
     if (disposed) {
       return;
     }
 
-    const state = readClaudeUsage(stateDir, {
+    const state = await readClaudeUsage(stateDir, {
       now: now(),
       staleAfterMs,
       fs: fileSystem,
     });
+    if (disposed) {
+      return;
+    }
     const nextKey = stateKey(state);
-    if (nextKey !== lastKey) {
+    if (lastKey === null || nextKey !== lastKey) {
       lastKey = nextKey;
-      if (!disposed) {
-        onState(state);
-      }
+      onState(state);
     }
     armStaleTimer(state);
   }
@@ -323,7 +323,7 @@ export function watchClaudeUsage(
     debounceTimer = setTimeout(() => {
       debounceTimer = null;
       if (!disposed) {
-        refresh();
+        void refresh();
       }
     }, debounceMs);
     unrefTimer(debounceTimer);
@@ -344,13 +344,16 @@ export function watchClaudeUsage(
     }
   }
 
-  function attachWatcher(): void {
-    if (disposed || watcher !== null) {
+  async function attachWatcher(): Promise<void> {
+    if (disposed || watcher !== null || watcherAttachInFlight) {
       return;
     }
 
+    watcherAttachInFlight = true;
     try {
-      if (!fileSystem.existsSync(stateDir)) {
+      const filePromises = fileSystem.promises ?? fs.promises;
+      await filePromises.access(stateDir);
+      if (disposed || watcher !== null) {
         return;
       }
       const nextWatcher = fileSystem.watch(
@@ -369,6 +372,8 @@ export function watchClaudeUsage(
         }
         watcher = null;
       }
+    } finally {
+      watcherAttachInFlight = false;
     }
   }
 
@@ -393,15 +398,15 @@ export function watchClaudeUsage(
     clearStaleTimer();
   }
 
-  armStaleTimer(initialState);
-  attachWatcher();
+  void refresh();
+  void attachWatcher();
   pollTimer = setInterval(() => {
     if (disposed) {
       return;
     }
-    refresh();
+    void refresh();
     if (watcher === null) {
-      attachWatcher();
+      void attachWatcher();
     }
   }, pollMs);
   unrefTimer(pollTimer);
